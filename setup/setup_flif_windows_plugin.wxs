@@ -1,0 +1,127 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!--
+Copyright 2016 Freddy Herzog
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+
+  <?include definitions.wxi ?>
+
+  <Product Id='*'
+           UpgradeCode='ED7F89C0-74AA-40CC-867C-7BE55524B5C6'
+           Name='$(var.product_name) $(var.version)'
+           Language='1033'
+           Version='$(var.version)'
+           Manufacturer="Freddy Herzog"
+           Codepage='65001'>
+
+    <Package InstallerVersion='300'
+             Platform="x64"
+             Compressed='yes'/>
+
+    <Media Id="1"
+           Cabinet="flif_codec.cab"
+           EmbedCab="yes" />
+
+    <MajorUpgrade DowngradeErrorMessage="A later version of $(var.product_name) is already installed. Setup will now exit." />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="dir.FLIFROOT64" Name="FLIF Codec"/>
+      </Directory>
+    </Directory>
+
+    <DirectoryRef Id="dir.FLIFROOT64">
+      <Component Id="flif_windows_plugin.dll" Guid="7B296E23-500F-4DA7-B7ED-8980986BEF7C" Win64="yes">
+        <File Id="flif_windows_plugin.dll" Source="..\build\Release\flif_windows_plugin.dll" KeyPath="yes" Checksum="yes"/>
+      </Component>
+      <Component Id="flif.dll" Guid="7CD11780-F2EA-4ED4-9662-93427972C2E7" Win64="yes">
+        <File Id="flif.dll" Source="..\3rdparty\bin\flif.dll" KeyPath="yes" Checksum="yes"/>
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="TARGETDIR">
+      <Component Id="RegistryEntries" Guid="5C2D2DB3-6CE7-4FD4-B0E1-B7FC89EA5C87" Win64="yes">
+        <RegistryKey Root="HKCR"
+                     Key="CLSID\{DF90537A-80B9-4387-9C91-81DFFE45E4F9}">
+          <RegistryValue Type="string" Value="FLIF Decoder"/>
+          <RegistryValue Type="string" Name="ContainerFormat" Value="{3B9D0588-14A5-4DF3-9C53-7EFCF8BFD65D}"/>
+          <RegistryValue Type="string" Name="FileExtensions" Value=".flif"/>
+          <RegistryValue Type="string" Name="FriendlyName" Value="FLIF Decoder"/>
+          <RegistryValue Type="string" Name="MimeTypes" Value="image/flif"/>
+          <RegistryValue Type="string" Name="VendorGUID" Value="{F0967481-BDCE-4850-88A9-47303C90B96C}"/>
+          <RegistryValue Type="integer" Name="SupportsAnimation" Value="1"/>
+          <RegistryValue Type="integer" Name="SupportChromakey" Value="0"/>
+          <RegistryValue Type="integer" Name="SupportLossless" Value="1"/>
+          <RegistryValue Type="integer" Name="SupportMultiframe" Value="0"/>
+          <RegistryKey Key="Formats\{F5C7AD2D-6A8D-43DD-A7A8-A29935261AE9}" ForceCreateOnInstall="yes"/>
+          <RegistryKey Key="InprocServer32">
+            <RegistryValue Type="string" Value="[dir.FLIFROOT64]flif_windows_plugin.dll"/>
+            <RegistryValue Type="string" Name="ThreadingModel" Value="Both"/>
+          </RegistryKey>
+          <RegistryKey Key="Patterns\0">
+            <RegistryValue Type="integer" Name="Position" Value="0"/>
+            <RegistryValue Type="integer" Name="Length" Value="4"/>
+            <RegistryValue Type="binary" Name="Pattern" Value="464C4946"/>
+            <RegistryValue Type="binary" Name="Mask" Value="FFFFFFFF"/>
+          </RegistryKey>
+        </RegistryKey>
+		
+        <RegistryKey Root="HKCR"
+                     Key="CLSID\{7ED96837-96F0-4812-B211-F13C24117ED3}\Instance\{DF90537A-80B9-4387-9C91-81DFFE45E4F9}">
+          <RegistryValue Type="string" Name="CLSID" Value="{DF90537A-80B9-4387-9C91-81DFFE45E4F9}"/>
+          <RegistryValue Type="string" Name="FriendlyName" Value="FLIF Decoder"/>
+        </RegistryKey>
+		
+        <RegistryKey Root="HKCR"
+                     Key=".flif">
+          <RegistryValue Type="string" Value="fliffile"/>
+          <RegistryValue Type="string" Name="Content Type" Value="image/flif"/>
+          <RegistryValue Type="string" Name="PerceivedType" Value="image"/>
+          <RegistryKey Key="OpenWithList\PhotoViewer.dll" ForceCreateOnInstall="yes"/>
+          <RegistryValue Key="OpenWithProgids" Type="string" Name="fliffile" Value=""/>
+          
+          <RegistryKey Key="ShellEx">
+            <RegistryValue Key="ContextMenuHandlers\ShellImagePreview" Type="string" Value="{FFE2A43C-56B9-4bf5-9A79-CC6D4285608A}"/>
+            <RegistryValue Key="{e357fccd-a995-4576-b01f-234630154e96}" Type="string" Value="{C7657C4A-9F68-40fa-A4DF-96BC08EB3551}"/>
+          </RegistryKey>
+        </RegistryKey>
+		
+		<RegistryKey Root="HKCR"
+                     Key="fliffile">
+          <RegistryValue Type="string" Value="FLIF Image"/>
+		  <RegistryValue Type="string" Name="FriendlyTypeName" Value="FLIF Image"/>
+		  <RegistryValue Key="DefaultIcon" Type="expandable" Value="%SystemRoot%\System32\imageres.dll,-72"/>
+		  <RegistryKey Key="shell">
+		    <RegistryKey Key="open">
+			  <RegistryValue Type="expandable" Name="MuiVerb" Value="@%ProgramFiles%\Windows Photo Viewer\photoviewer.dll,-3043"/>
+			  <RegistryValue Key="command" Type="expandable" Value="%SystemRoot%\System32\rundll32.exe &quot;%ProgramFiles%\Windows Photo Viewer\PhotoViewer.dll&quot;, ImageView_Fullscreen %1"/>
+		    </RegistryKey>
+			<RegistryValue Key="printto\command" Type="expandable" Value="%SystemRoot%\System32\rundll32.exe %SystemRoot%\System32\shimgvw.dll, ImageView_PrintTo /pt %1 %2 %3 %4"/>
+		  </RegistryKey>
+		</RegistryKey>
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="f.FLIF" Title="FLIF Codec" Level="1">
+      <ComponentRef Id="flif_windows_plugin.dll" />
+      <ComponentRef Id="flif.dll" />
+      <ComponentRef Id="RegistryEntries" />
+    </Feature>
+
+	<UIRef Id="WixUI_Minimal" />
+    <WixVariable Id='WixUILicenseRtf' Value='license.rtf' />
+
+  </Product>
+</Wix>

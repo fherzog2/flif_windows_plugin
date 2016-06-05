@@ -1,0 +1,6 @@
+LIBRARY flif_windows_plugin
+EXPORTS
+  DllCanUnloadNow PRIVATE
+  DllGetClassObject PRIVATE
+  DllRegisterServer PRIVATE
+  DllUnregisterServer PRIVATE

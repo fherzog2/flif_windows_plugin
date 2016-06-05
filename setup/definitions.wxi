@@ -1,0 +1,5 @@
+<Include>
+  <?define version="!(bind.FileVersion.flif_windows_plugin.dll)"?>
+  <?define product_name="FLIF Windows Plugin"?>
+  <?define internal_name="flif_windows_plugin"?>
+</Include>
