@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(flif_windows_plugin)
 
+set(CMAKE_CXX_FLAGS_RELEASE "/MT /O2 /Ob2 /D NDEBUG")
+
 set(_FLIF_SEARCHES)
 
 if(FLIF_ROOT)

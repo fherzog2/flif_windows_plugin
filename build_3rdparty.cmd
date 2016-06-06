@@ -50,7 +50,7 @@ if not exist "%zlibdir%\\" (
 if not exist build.zlib (
     mkdir build.zlib
     cd build.zlib
-    cmake ..\%zlibdir% -G "Visual Studio 14 2015 Win64"
+    call :cmake_init_with_static_runtime ..\%zlibdir%
     cd ..
 )
 msbuild build.zlib\zlib.sln /p:Configuration=%BUILD_CFG%
@@ -73,7 +73,7 @@ if not exist "%lpngdir%\\" (
 if not exist build.png (
     mkdir build.png
     cd build.png
-    cmake ..\%lpngdir% -G "Visual Studio 14 2015 Win64"
+    call :cmake_init_with_static_runtime ..\%lpngdir%
     cd ..
 )
 msbuild build.png\libpng.sln /p:Configuration=%BUILD_CFG%
@@ -97,10 +97,20 @@ if not exist "%flifdir%\\" (
 if not exist build.flif (
     mkdir build.flif
     cd build.flif
-    cmake ..\%flifdir%\src -G "Visual Studio 14 2015 Win64"
+    call :cmake_init_with_static_runtime ..\%flifdir%\src
     cd ..
 )
 msbuild build.flif\flif.sln /p:Configuration=%BUILD_CFG% /t:flif_lib
 
 robocopy build.flif\%BUILD_CFG% bin
 robocopy %flifdir%\src\library bin *.h
+
+exit /b 0
+
+rem This is a trick to compile all dependencies with static runtime.
+rem Init the build dir, rewrite compiler flags in the cache, then run init again.
+:cmake_init_with_static_runtime
+cmake %1 -G "Visual Studio 14 2015 Win64"
+PowerShell "$content = [System.IO.File]::ReadAllText('CMakeCache.txt').Replace('/MD ', '/MT '); [System.IO.File]::WriteAllText('CMakeCache.txt', $content)"
+cmake %1 -G "Visual Studio 14 2015 Win64"
+exit /b 0

@@ -31,14 +31,14 @@ limitations under the License.
              Compressed='yes'/>
 
     <Media Id="1"
-           Cabinet="flif_codec.cab"
+           Cabinet="flif_windows_plugin.cab"
            EmbedCab="yes" />
 
     <MajorUpgrade DowngradeErrorMessage="A later version of $(var.product_name) is already installed. Setup will now exit." />
 
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFiles64Folder">
-        <Directory Id="dir.FLIFROOT64" Name="FLIF Codec"/>
+        <Directory Id="dir.FLIFROOT64" Name="FLIF Windows Plugin"/>
       </Directory>
     </Directory>
 
@@ -114,7 +114,7 @@ limitations under the License.
       </Component>
     </DirectoryRef>
 
-    <Feature Id="f.FLIF" Title="FLIF Codec" Level="1">
+    <Feature Id="f.FLIF" Title="FLIF Windows Plugin" Level="1">
       <ComponentRef Id="flif_windows_plugin.dll" />
       <ComponentRef Id="flif.dll" />
       <ComponentRef Id="RegistryEntries" />
