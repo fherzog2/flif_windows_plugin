@@ -22,6 +22,7 @@ limitations under the License.
 #include "util.h"
 #include "plugin_guids.h"
 #include "flifBitmapDecoder.h"
+#include "flifPropertyHandler.h"
 #include "ClassFactory.h"
 
 /*!
@@ -91,6 +92,7 @@ STDAPI DllRegisterServer()
 
 		RegistryManager reg;
 		flifBitmapDecoder::registerClass(reg);
+		flifPropertyHandler::registerClass(reg);
 
 		if(!reg.getErrors().empty())
 		{
@@ -111,6 +113,7 @@ STDAPI DllUnregisterServer()
 
 		RegistryManager reg;
 		flifBitmapDecoder::unregisterClass(reg);
+		flifPropertyHandler::unregisterClass(reg);
 		
 		if(!reg.getErrors().empty())
 		{
@@ -133,6 +136,11 @@ STDAPI DllGetClassObject(REFCLSID clsid, REFIID iid, LPVOID *ppv)
 		if(IsEqualGUID(clsid, CLSID_flifBitmapDecoder))
 		{
 			ComPtr<ClassFactory<flifBitmapDecoder>> cf(new ClassFactory<flifBitmapDecoder>());
+			return cf->QueryInterface(iid, ppv);
+		}
+		if(IsEqualGUID(clsid, CLSID_flifPropertyHandler))
+		{
+			ComPtr<ClassFactory<flifPropertyHandler>> cf(new ClassFactory<flifPropertyHandler>());
 			return cf->QueryInterface(iid, ppv);
 		}
 

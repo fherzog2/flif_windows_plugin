@@ -28,13 +28,14 @@ if(NOT FLIF_LIBRARY)
 endif()
 
 set(SRC_FILES src/flifBitmapDecoder.cpp
+              src/flifPropertyHandler.cpp
               src/dll_interface.cpp
               src/RegistryManager.cpp
               src/flif_windows_plugin.rc
               src/plugin_export.def)
 
 add_library(flif_windows_plugin SHARED ${SRC_FILES})
-target_link_libraries(flif_windows_plugin ${FLIF_LIBRARY} Windowscodecs)
+target_link_libraries(flif_windows_plugin ${FLIF_LIBRARY} Windowscodecs Propsys Shlwapi)
 include_directories(flif_windows_plugin ${FLIF_INCLUDE_DIR})
 
 # test
