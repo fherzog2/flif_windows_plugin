@@ -53,6 +53,9 @@ limitations under the License.
 
     <DirectoryRef Id="TARGETDIR">
       <Component Id="RegistryEntries" Guid="5C2D2DB3-6CE7-4FD4-B0E1-B7FC89EA5C87" Win64="yes">
+        <!--
+        Registering the decoder
+        -->
         <RegistryKey Root="HKCR"
                      Key="CLSID\{DF90537A-80B9-4387-9C91-81DFFE45E4F9}">
           <RegistryValue Type="string" Value="FLIF Decoder"/>
@@ -111,6 +114,37 @@ limitations under the License.
 			<RegistryValue Key="printto\command" Type="expandable" Value="%SystemRoot%\System32\rundll32.exe %SystemRoot%\System32\shimgvw.dll, ImageView_PrintTo /pt %1 %2 %3 %4"/>
 		  </RegistryKey>
 		</RegistryKey>
+
+        <!--
+        Registering the property handler
+        -->
+        <RegistryKey Root="HKCR"
+                     Key="CLSID\{FA673482-A004-432C-86F0-632C637931BA}">
+          <RegistryValue Type="string" Value="FLIF Property Handler"/>
+          <RegistryValue Type="integer" Name="ManualSafeSave" Value="1"/>
+          <RegistryKey Key="InprocServer32">
+            <RegistryValue Type="string" Value="[dir.FLIFROOT64]flif_windows_plugin.dll"/>
+            <RegistryValue Type="string" Name="ThreadingModel" Value="Both"/>
+          </RegistryKey>
+        </RegistryKey>
+
+        <RegistryKey Root="HKCR"
+                     Key="SystemFileAssociations\.flif">
+          <RegistryValue Type="string" Name="PreviewDetails" Value="prop:System.DateModified;System.Image.Dimensions;System.Size;*System.OfflineAvailability;*System.OfflineStatus;System.DateCreated;*System.SharedWith"/>
+          <RegistryValue Type="string" Name="FullDetails" Value="prop:System.PropGroup.Image;System.Image.Dimensions;System.Image.HorizontalSize;System.Image.VerticalSize;System.Image.BitDepth;System.PropGroup.FileSystem;System.ItemNameDisplay;System.ItemType;System.ItemFolderPathDisplay;System.DateCreated;System.DateModified;System.Size;System.FileAttributes;System.OfflineAvailability;System.OfflineStatus;System.SharedWith;System.FileOwner;System.ComputerName"/>
+          <RegistryValue Type="string" Name="InfoTip" Value="prop:System.ItemType;System.Image.Dimensions;System.Size"/>
+          <RegistryValue Type="string" Name="PreviewTitle" Value="prop:System.Title;System.ItemType"/>
+        </RegistryKey>
+
+        <RegistryKey Root="HKCR"
+                     Key="SOFTWARE\Microsoft\Windows\CurrentVersion\PropertySystem\PropertyHandlers\.flif">
+          <RegistryValue Type="string" Value="{FA673482-A004-432C-86F0-632C637931BA}"/>
+        </RegistryKey>
+
+        <RegistryKey Root="HKCR"
+                     Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\KindMap">
+          <RegistryValue Type="string" Name=".flif" Value="Picture"/>
+        </RegistryKey>
       </Component>
     </DirectoryRef>
 
