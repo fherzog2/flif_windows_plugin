@@ -14,3 +14,5 @@ This plugin enables decoding of FLIF images in applications which use the Window
 * building the installer ([WiX Toolset](http://wixtoolset.org/) must be in the PATH)
   * `cd setup`
   * `make_installer.cmd`
+
+See also: [https://github.com/FLIF-hub/FLIF](https://github.com/FLIF-hub/FLIF)
