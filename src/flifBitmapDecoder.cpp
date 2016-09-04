@@ -32,16 +32,18 @@ STDMETHODIMP flifBitmapFrameDecode::QueryInterface(REFIID iid, void** ppvObject)
 	if(ppvObject == 0)
 		return E_INVALIDARG;
 
-	if (IsEqualGUID(iid, IID_IUnknown) ||
-		IsEqualGUID(iid, IID_IWICBitmapSource) ||
-		IsEqualGUID(iid, IID_IWICBitmapFrameDecode))
+	if (IsEqualGUID(iid, IID_IUnknown) || IsEqualGUID(iid, IID_IWICBitmapFrameDecode))
+		*ppvObject = static_cast<IWICBitmapFrameDecode*>(this);
+	else if (IsEqualGUID(iid, IID_IWICBitmapSource))
+		*ppvObject = static_cast<IWICBitmapSource*>(this);
+	else
 	{
-		*ppvObject = this;
-		AddRef();
-		return S_OK;
+		*ppvObject = 0;
+		return E_NOINTERFACE;
 	}
 
-	return E_NOINTERFACE;
+	AddRef();
+	return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE flifBitmapFrameDecode::GetSize(UINT* puiWidth, UINT* puiHeight)
@@ -225,15 +227,16 @@ STDMETHODIMP flifBitmapDecoder::QueryInterface(REFIID iid, void** ppvObject)
 	if(ppvObject == 0)
 		return E_INVALIDARG;
 
-	if(	IsEqualGUID(iid, IID_IUnknown) ||
-		IsEqualGUID(iid, IID_IWICBitmapDecoder))
+	if (IsEqualGUID(iid, IID_IUnknown) || IsEqualGUID(iid, IID_IWICBitmapDecoder))
+		*ppvObject = static_cast<IWICBitmapDecoder*>(this);
+	else
 	{
-		*ppvObject = this;
-		AddRef();
-		return S_OK;
+		*ppvObject = 0;
+		return E_NOINTERFACE;
 	}
 
-	return E_NOINTERFACE;
+	AddRef();
+	return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE flifBitmapDecoder::QueryCapability(IStream* stream, DWORD* capability)

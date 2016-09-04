@@ -43,15 +43,16 @@ public:
         if(ppvObject == 0)
             return E_INVALIDARG;
 
-        if (IsEqualGUID(iid, IID_IUnknown) ||
-            IsEqualGUID(iid, IID_IClassFactory))
+        if (IsEqualGUID(iid, IID_IUnknown) || IsEqualGUID(iid, IID_IClassFactory))
+            *ppvObject = static_cast<IClassFactory*>(this);
+        else
         {
-            *ppvObject = this;
-            AddRef();
-            return S_OK;
+            *ppvObject = 0;
+            return E_NOINTERFACE;
         }
 
-        return E_NOINTERFACE;
+        AddRef();
+        return S_OK;
     }
     virtual ULONG STDMETHODCALLTYPE AddRef() override { return _ref_count.addRef(); }
     virtual ULONG STDMETHODCALLTYPE Release() override { return _ref_count.releaseRef(this); }
