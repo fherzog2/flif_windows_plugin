@@ -149,6 +149,41 @@ HRESULT STDMETHODCALLTYPE flifPropertyHandler::Commit(void)
 	CUSTOM_CATCH_RETURN_HRESULT
 }
 
+/*!
+* @param stream Input stream
+* @param chunk_size The maximum amount of bytes that will be read from the stream
+* @param buffer Keeps the read bytes for another run
+* @param decoder Valid if the function returns S_OK
+* @return S_OK if the decoder is ready.
+*         S_FALSE if there is more data.
+*         An error code if the reading or decoding failed.
+*/
+HRESULT readChunkAndTryDecoding(IStream *stream, size_t chunk_size, vector<BYTE>& buffer, flifDecoder& decoder)
+{
+	size_t previous_size = buffer.size();
+	buffer.resize(buffer.size() + chunk_size);
+
+	ULONG actually_read;
+	HRESULT read_result = stream->Read(buffer.data() + previous_size, chunk_size, &actually_read);
+	if(FAILED(read_result))
+		return read_result;
+
+	bool end_of_stream = read_result == S_FALSE;
+
+	buffer.resize(previous_size + actually_read);
+
+	if (flif_decoder_decode_memory(decoder, buffer.data(), buffer.size()) != 0 &&
+		flif_decoder_num_images(decoder) != 0)
+	{
+		return S_OK;
+	}
+
+	if(end_of_stream)
+		return E_FAIL;
+	else
+		return S_FALSE;
+}
+
 HRESULT STDMETHODCALLTYPE flifPropertyHandler::Initialize(IStream *stream, DWORD grfMode)
 {
 	CUSTOM_TRY
@@ -157,41 +192,30 @@ HRESULT STDMETHODCALLTYPE flifPropertyHandler::Initialize(IStream *stream, DWORD
 		if(_is_initialized)
 			return HRESULT_FROM_WIN32(ERROR_ALREADY_INITIALIZED);
 
-		/*
-		   HACK
-
-		   There is currently no nice interface to get the dimensions of a FLIF file.
-		   This code makes use of the fact that truncated FLIF files can still be decoded.
-		   So it read a tiny amount of the file and decodes an image from this to get the dimensions.
-		   For some files this fails, because it is not clear how much data must be read to get an image.
-
-		   TODO: Obviously this is inefficient. Need to create an interface in FLIF.
-		*/ 
-
-		const ULONG max_read = 100;
-		ULONG actually_read;
-		vector<BYTE> bytes;
-		bytes.resize(max_read);
-		HRESULT read_result = stream->Read(bytes.data(), max_read, &actually_read);
-		if(FAILED(read_result))
-			return read_result;
-
-		bytes.resize(actually_read);
-
+		vector<BYTE> read_buffer;
 		flifDecoder decoder;
 		if(decoder == 0)
 			return E_FAIL;
 
-		if(flif_decoder_decode_memory(decoder, bytes.data(), bytes.size()) == 0)
-			return E_FAIL;
+		while(true)
+		{
+			HRESULT try_decode_result = readChunkAndTryDecoding(stream, 2048, read_buffer, decoder);
+			if(FAILED(try_decode_result))
+				return try_decode_result;
 
-		FLIF_IMAGE* image = flif_decoder_get_image(decoder, 0);
-		if(image == 0)
-			return E_FAIL;
+			if(try_decode_result == S_FALSE)
+				continue;
 
-		_width = flif_image_get_width(image);
-		_height = flif_image_get_height(image);
-		_bitdepth = flif_image_get_depth(image) * flif_image_get_nb_channels(image);
+			FLIF_IMAGE* image = flif_decoder_get_image(decoder, 0);
+			if(image == 0)
+				return E_FAIL;
+
+			_width = flif_image_get_width(image);
+			_height = flif_image_get_height(image);
+			_bitdepth = flif_image_get_depth(image) * flif_image_get_nb_channels(image);
+			break;
+		}
+
 		_is_initialized = true;
 		return S_OK;
 

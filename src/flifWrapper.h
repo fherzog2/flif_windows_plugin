@@ -36,13 +36,141 @@ public:
 		_decoder = 0;
 	}
 
+	flifDecoder(flifDecoder&& other)
+	{
+		_decoder = other._decoder;
+		other._decoder = 0;
+	}
+
+	flifDecoder& operator=(flifDecoder&& other)
+	{
+		_decoder = other._decoder;
+		other._decoder = 0;
+		return *this;
+	}
+
 	operator FLIF_DECODER*() const
 	{
 		return _decoder;
 	}
 
 private:
+	flifDecoder(const flifDecoder& other)
+	{
+	}
+
+	flifDecoder& operator=(const flifDecoder& other)
+	{
+		return *this;
+	}
+
 	FLIF_DECODER* _decoder;
+};
+
+class flifInfo
+{
+public:
+	flifInfo()
+		: _info(0)
+	{
+	}
+
+	flifInfo(FLIF_INFO* info)
+		: _info(info)
+	{
+	}
+
+	~flifInfo()
+	{
+		if(_info != 0)
+			flif_destroy_info(_info);
+		_info = 0;
+	}
+
+	flifInfo(flifInfo&& other)
+	{
+		_info = other._info;
+		other._info = 0;
+	}
+
+	flifInfo& flifInfo::operator=(flifInfo&& other)
+	{
+		_info = other._info;
+		other._info = 0;
+		return *this;
+	}
+
+	operator FLIF_INFO*() const
+	{
+		return _info;
+	}
+
+private:
+	flifInfo(const flifInfo& other)
+	{
+	}
+
+	flifInfo& operator=(const flifInfo& other)
+	{
+		return *this;
+	}
+
+	FLIF_INFO* _info;
+};
+
+class flifMetaData
+{
+public:
+	flifMetaData()
+		: _image(0)
+		, _metadata(0)
+		, _length(0)
+	{}
+
+	flifMetaData(FLIF_IMAGE* image, const char* chunkname)
+		: _image(image)
+		, _metadata(0)
+		, _length(0)
+	{
+		flif_image_get_metadata(_image, chunkname, &_metadata, &_length);
+	}
+
+	~flifMetaData()
+	{
+		if(_metadata != 0)
+			flif_image_free_metadata(_image, _metadata);
+	}
+
+	flifMetaData(flifMetaData&& other)
+	{
+		_image = other._image;
+		_metadata = other._metadata;
+		other._metadata = 0;
+		_length = other._length;
+	}
+
+	flifMetaData& operator=(flifMetaData&& other)
+	{
+		_image = other._image;
+		_metadata = other._metadata;
+		other._metadata = 0;
+		_length = other._length;
+		return *this;
+	}
+
+private:
+	flifMetaData(const flifMetaData& other)
+	{
+	}
+
+	flifMetaData& operator=(const flifMetaData& other)
+	{
+		return *this;
+	}
+
+	FLIF_IMAGE* _image;
+	unsigned char* _metadata;
+	size_t _length;
 };
 
 struct flifRGBA

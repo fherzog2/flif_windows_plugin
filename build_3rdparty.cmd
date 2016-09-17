@@ -13,9 +13,9 @@ set lpngurl=https://sourceforge.net/projects/libpng/files/libpng16/1.6.24/lpng16
 set lpngzip=png1624.zip
 set lpngdir=lpng1624
 
-set flifurl=https://github.com/FLIF-hub/FLIF/archive/1f20c0ebeda52d6f24b0ba23725e8bcc5bc8336a.zip
-set flifzip=FLIF-1f20c0ebeda52d6f24b0ba23725e8bcc5bc8336a.zip
-set flifdir=FLIF-1f20c0ebeda52d6f24b0ba23725e8bcc5bc8336a
+set flifurl=https://github.com/FLIF-hub/FLIF/archive/eb4c294a3e0e25113c978fd6ea5951dd48fc1c8b.zip
+set flifzip=FLIF-eb4c294a3e0e25113c978fd6ea5951dd48fc1c8b.zip
+set flifdir=FLIF-eb4c294a3e0e25113c978fd6ea5951dd48fc1c8b
 
 set BUILD_CFG=Release
 
