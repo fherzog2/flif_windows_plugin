@@ -1,6 +1,10 @@
 # FLIF Windows Plugin
 This plugin enables decoding of FLIF images in applications which use the Windows Imaging Component API. In this way, FLIF images can be viewed in Windows Explorer like other common image formats.
 
+## Installation
+
+The latest installer is provided under "Releases". Please note, a restart may be required before Explorer thumbnails are loaded for .flif files.
+
 ## Build instructions
 * open a commandline (Visual Studio 2015 and CMake must be in the PATH)
 * navigate to the project root dir
