@@ -164,7 +164,7 @@ HRESULT readChunkAndTryDecoding(IStream *stream, size_t chunk_size, vector<BYTE>
 	buffer.resize(buffer.size() + chunk_size);
 
 	ULONG actually_read;
-	HRESULT read_result = stream->Read(buffer.data() + previous_size, chunk_size, &actually_read);
+	HRESULT read_result = stream->Read(buffer.data() + previous_size, static_cast<ULONG>(chunk_size), &actually_read);
 	if(FAILED(read_result))
 		return read_result;
 

@@ -70,6 +70,117 @@ void debug_out(const string& message)
         return 1; \
     }
 
+bool save_bmp(BYTE* Buffer, int width, int height, DWORD paddedsize, LPCSTR bmpfile)
+{
+    BITMAPFILEHEADER bmfh;
+    BITMAPINFOHEADER info;
+    memset(&bmfh, 0, sizeof(BITMAPFILEHEADER));
+    memset(&info, 0, sizeof(BITMAPINFOHEADER));
+
+    bmfh.bfType = 0x4d42;       // 0x4d42 = 'BM'
+    bmfh.bfReserved1 = 0;
+    bmfh.bfReserved2 = 0;
+    bmfh.bfSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + paddedsize;
+    bmfh.bfOffBits = 0x36;
+
+    info.biSize = sizeof(BITMAPINFOHEADER);
+    info.biWidth = width;
+    info.biHeight = -height;
+    info.biPlanes = 1;
+    info.biBitCount = 24;
+    info.biCompression = BI_RGB;
+    info.biSizeImage = 0;
+    info.biXPelsPerMeter = 0x0ec4;
+    info.biYPelsPerMeter = 0x0ec4;
+    info.biClrUsed = 0;
+    info.biClrImportant = 0;
+
+    HANDLE file = CreateFileA(bmpfile, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if(NULL == file)
+    {
+        CloseHandle(file);
+        return false;
+    }
+
+    DWORD bwritten;
+    if(!WriteFile(file, &bmfh, sizeof ( BITMAPFILEHEADER ), &bwritten, NULL))
+    {
+        CloseHandle(file);
+        return false;
+    }
+
+    if(!WriteFile(file, &info, sizeof ( BITMAPINFOHEADER ), &bwritten, NULL))
+    {
+        CloseHandle(file);
+        return false;
+    }
+
+    if(!WriteFile(file, Buffer, paddedsize, &bwritten, NULL))
+    {
+        CloseHandle(file);
+        return false;
+    }
+
+    CloseHandle(file);
+    return true;
+}
+
+HRESULT save_bitmapframe(IWICBitmapFrameDecode* frame, const string& filename)
+{
+    UINT width;
+    UINT height;
+    HRESULT hr = frame->GetSize(&width, &height);
+    if(FAILED(hr))
+        return hr;
+
+    WICRect full_rect = { 0, 0, width, height };
+    vector<BYTE> rgba_bytes;
+    rgba_bytes.resize(width * height * 4);
+    hr = frame->CopyPixels(&full_rect, width * 4, static_cast<UINT>(rgba_bytes.size()), rgba_bytes.data());
+    if(FAILED(hr))
+        return hr;
+
+    vector<BYTE> rgb_bytes;
+
+    UINT stride = width * 3;
+    if(stride % 4 != 0)
+        stride += 4 - (stride % 4);
+
+    auto lerp = [](BYTE x, BYTE y, BYTE t){
+        float fx = float(x) / 255.0f;
+        float fy = float(y) / 255.0f;
+        float ft = float(t) / 255.0f;
+        return BYTE((fx * ft + fy * (1.0f - ft)) * 255.0f);
+    };
+
+    rgb_bytes.resize(stride * height);
+    for (UINT y = 0; y < height; ++y)
+        for (UINT x = 0; x < width; ++x)
+        {
+            BYTE r = rgba_bytes[y * width*4 + x*4];
+            BYTE g = rgba_bytes[y * width*4 + x*4 + 1];
+            BYTE b = rgba_bytes[y * width*4 + x*4 + 2];
+            BYTE a = rgba_bytes[y * width*4 + x*4 + 3];
+
+            if(a < 255)
+            {
+                // for transparency, use a magenta background
+                r = lerp(r, 255, a);
+                g = lerp(g, 0, a);
+                b = lerp(b, 255, a);
+            }
+
+            rgb_bytes[y * stride + x*3]     = b;
+            rgb_bytes[y * stride + x*3 + 1] = g;
+            rgb_bytes[y * stride + x*3 + 2] = r;
+        }
+
+    if(!save_bmp(rgb_bytes.data(), width, height, static_cast<DWORD>(rgb_bytes.size()), filename.data()))
+        return E_FAIL;
+
+    return S_OK;
+}
+
 int test_file(const string& filename, IClassFactory* class_factory_decoder, IClassFactory* class_factory_props)
 {
 	HRESULT hr = S_OK;
@@ -115,6 +226,17 @@ int test_file(const string& filename, IClassFactory* class_factory_decoder, ICla
 			hr = frame->CopyPixels(&full_rect, w * 4, static_cast<UINT>(full.size()), full.data());
 			HR_ASSERT(hr)
 		}
+
+        // save the decoded image as bitmap so we can verify the plugin works without actually installing it
+
+        string decoded_filename = filename;
+        decoded_filename.replace(decoded_filename.rfind(".flif"), 5, " (decoded).bmp");
+        auto path_end = decoded_filename.rfind("/");
+        if(path_end != string::npos)
+            decoded_filename.replace(0, path_end + 1, "");
+
+        hr = save_bitmapframe(frame.get(), decoded_filename);
+        HR_ASSERT(hr)
 	}
 
 	LARGE_INTEGER start_pos;
@@ -139,19 +261,49 @@ int test_file(const string& filename, IClassFactory* class_factory_decoder, ICla
 		HR_ASSERT(hr)
 		MY_ASSERT(count == 0, "No attributes");
 
+        debug_out("Printing metadata");
+
+        CoInitialize(0);
+
 		for(DWORD i = 0; i < count; ++i)
 		{
 			PROPERTYKEY key;
 			hr = props->GetAt(i, &key);
 			HR_ASSERT(hr)
 
+            PWSTR key_string;
+            hr = PSGetNameFromPropertyKey (key, &key_string);
+            HR_ASSERT(hr)
+
 			PROPVARIANT var;
 			PropVariantInit(&var);
 			hr = props->GetValue(key, &var);
 			HR_ASSERT(hr)
 
-			wprintf(L"%d %s\n", PropVariantToUInt32WithDefault(var, -1), PropVariantToStringWithDefault(var, L"Not-A-String"));
+            bool printed = false;
+
+            UINT value_uint;
+            if(!printed && SUCCEEDED(PropVariantToUInt32(var, &value_uint)))
+            {
+                wprintf(L"    %s\t%d\n", key_string, value_uint);
+                printed = true;
+            }
+
+            const UINT VALUE_STRING_SIZE = 1024;
+            WCHAR value_string[VALUE_STRING_SIZE];
+            if(!printed && SUCCEEDED(PropVariantToString(var, value_string, VALUE_STRING_SIZE)))
+            {
+                wprintf(L"    %s\t%s\n", key_string, value_string);
+                printed = true;
+            }
+
+            if(!printed)
+                wprintf(L"    %s\tUnsupported datatype, update this printing code\n", key_string);
+
+            CoTaskMemFree(key_string);
 		}
+
+        CoUninitialize();
 	}
 
 	return 0;
@@ -159,6 +311,12 @@ int test_file(const string& filename, IClassFactory* class_factory_decoder, ICla
 
 int main(int argc, char** args)
 {
+    if(argc <= 1)
+    {
+        debug_out("missing argument");
+        return 1;
+    }
+
     auto plugin = LoadLibraryW(L"flif_windows_plugin.dll");
     
     auto get_class_object = reinterpret_cast<fpDllGetClassObject>(GetProcAddress(plugin, "DllGetClassObject"));
@@ -173,11 +331,8 @@ int main(int argc, char** args)
 
 	// test premade file
 
-	if(test_file("E:\\workspace\\C++\\flif_windows_plugin\\src\\test\\flif.flif", class_factory_decoder.get(), class_factory_props.get()) != 0)
+	if(test_file(args[1], class_factory_decoder.get(), class_factory_props.get()) != 0)
 		return 1;
-
-	//if(test_file(args[1], class_factory.get()) != 0)
-		//return 1;
 
 	// create fresh file
 
@@ -200,7 +355,7 @@ int main(int argc, char** args)
 			rgba[x].b = 0;
 			rgba[x].a = 255;
 		}
-		flif_image_write_row_RGBA8(image, 0, rgba, sizeof(rgba));
+		flif_image_write_row_RGBA8(image, y, rgba, sizeof(rgba));
 	}
 
 	debug_out("start encoding with FLIF");

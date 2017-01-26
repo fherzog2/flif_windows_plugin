@@ -5,17 +5,17 @@ rem Call this script in the library root directory, so cmake can find the depend
 rem A directory "3rdparty" is created where all work is done.
 rem At the end, all libraries and header files are pasted to "3rdparty\bin".
 
-set zliburl=https://sourceforge.net/projects/libpng/files/zlib/1.2.8/zlib128.zip/download
-set zlibzip=zlib128.zip
-set zlibdir=zlib-1.2.8
+set zliburl=https://github.com/madler/zlib/archive/v1.2.11.zip
+set zlibzip=v1.2.11.zip
+set zlibdir=zlib-1.2.11
 
-set lpngurl=https://sourceforge.net/projects/libpng/files/libpng16/1.6.24/lpng1624.zip/download
-set lpngzip=png1624.zip
-set lpngdir=lpng1624
+set lpngurl=https://github.com/glennrp/libpng/archive/v1.6.28.zip
+set lpngzip=v1.6.28.zip
+set lpngdir=libpng-1.6.28
 
-set flifurl=https://github.com/FLIF-hub/FLIF/archive/8d780de5186cf9de96e591d2594940274c591649.zip
-set flifzip=FLIF-8d780de5186cf9de96e591d2594940274c591649.zip
-set flifdir=FLIF-8d780de5186cf9de96e591d2594940274c591649
+set flifurl=https://github.com/FLIF-hub/FLIF/archive/6bdc5ab35f8b295e0584a99fd60b6f7a6d395c56.zip
+set flifzip=FLIF-6bdc5ab35f8b295e0584a99fd60b6f7a6d395c56.zip
+set flifdir=FLIF-6bdc5ab35f8b295e0584a99fd60b6f7a6d395c56
 
 set BUILD_CFG=Release
 
