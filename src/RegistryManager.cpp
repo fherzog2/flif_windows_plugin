@@ -18,21 +18,21 @@ limitations under the License.
 
 inline wstring formatRegErrorCode(LONG error)
 {
-	const DWORD BUFFER_SIZE = 256;
-	WCHAR buffer[BUFFER_SIZE];
-	if(0 != FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, 0, error, 0, buffer, BUFFER_SIZE, 0))
-		return buffer;
+    const DWORD BUFFER_SIZE = 256;
+    WCHAR buffer[BUFFER_SIZE];
+    if(0 != FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, 0, error, 0, buffer, BUFFER_SIZE, 0))
+        return buffer;
 
-	return wstring();
+    return wstring();
 }
 
 //=============================================================================
 
 RegistryManager::ErrorRecord::ErrorRecord(const Key& key, wstring value_name, LONG error, wstring context)
-	: _key(key)
-	, _value_name(value_name)
-	, _error_code(HRESULT_FROM_WIN32(error))
-	, _error(context + L": " + formatRegErrorCode(error))
+    : _key(key)
+    , _value_name(value_name)
+    , _error_code(HRESULT_FROM_WIN32(error))
+    , _error(context + L": " + formatRegErrorCode(error))
 {
 }
 
@@ -40,118 +40,118 @@ RegistryManager::ErrorRecord::ErrorRecord(const Key& key, wstring value_name, LO
 
 RegistryManager::Key RegistryManager::key(HKEY root, const wstring& subkey)
 {
-	return Key(root, subkey);
+    return Key(root, subkey);
 }
 
 HRESULT RegistryManager::writeValue(const Key& key, const wstring& value_name, DWORD value_type, const BYTE* value_ptr, DWORD value_size)
 {
-	HKEY hkey = 0;
-	LONG create_key_result = RegCreateKeyW(key._root, key._subkey.data(), &hkey);
-	if(create_key_result != ERROR_SUCCESS)
-	{
-		_error_buffer.push_back(ErrorRecord(key, value_name, create_key_result, L"RegCreateKey"));
-		return HRESULT_FROM_WIN32(create_key_result);
-	}
+    HKEY hkey = 0;
+    LONG create_key_result = RegCreateKeyW(key._root, key._subkey.data(), &hkey);
+    if(create_key_result != ERROR_SUCCESS)
+    {
+        _error_buffer.push_back(ErrorRecord(key, value_name, create_key_result, L"RegCreateKey"));
+        return HRESULT_FROM_WIN32(create_key_result);
+    }
 
-	LONG set_value_result = RegSetValueExW(hkey, value_name.data(), 0, value_type, value_ptr, value_size);
-	if(set_value_result != ERROR_SUCCESS)
-		_error_buffer.push_back(ErrorRecord(key, value_name, set_value_result, L"RegSetValueEx"));
+    LONG set_value_result = RegSetValueExW(hkey, value_name.data(), 0, value_type, value_ptr, value_size);
+    if(set_value_result != ERROR_SUCCESS)
+        _error_buffer.push_back(ErrorRecord(key, value_name, set_value_result, L"RegSetValueEx"));
 
-	LONG close_result = RegCloseKey(hkey);
-	if(close_result != ERROR_SUCCESS)
-		_error_buffer.push_back(ErrorRecord(key, value_name, close_result, L"RegCloseKey"));
+    LONG close_result = RegCloseKey(hkey);
+    if(close_result != ERROR_SUCCESS)
+        _error_buffer.push_back(ErrorRecord(key, value_name, close_result, L"RegCloseKey"));
 
-	if(set_value_result != ERROR_SUCCESS)
-		return HRESULT_FROM_WIN32(set_value_result);
+    if(set_value_result != ERROR_SUCCESS)
+        return HRESULT_FROM_WIN32(set_value_result);
 
-	return S_OK;
+    return S_OK;
 }
 
 HRESULT RegistryManager::writeDWORD(const Key& key, const wstring& value_name, DWORD value)
 {
-	return writeValue(key, value_name, REG_DWORD, reinterpret_cast<const BYTE*>(&value), sizeof(DWORD));
+    return writeValue(key, value_name, REG_DWORD, reinterpret_cast<const BYTE*>(&value), sizeof(DWORD));
 }
 
 HRESULT RegistryManager::writeString(const Key& key, const wstring& value_name, const wstring& value)
 {
-	// check limits before truncating value
-	size_t bytes_to_write = (value.size() + 1) * sizeof(WCHAR);
-	if(bytes_to_write > ULONG_MAX)
-		return E_INVALIDARG;
+    // check limits before truncating value
+    size_t bytes_to_write = (value.size() + 1) * sizeof(WCHAR);
+    if(bytes_to_write > ULONG_MAX)
+        return E_INVALIDARG;
 
-	return writeValue(key, value_name, REG_SZ, reinterpret_cast<const BYTE*>(value.data()), static_cast<DWORD>(bytes_to_write));
+    return writeValue(key, value_name, REG_SZ, reinterpret_cast<const BYTE*>(value.data()), static_cast<DWORD>(bytes_to_write));
 }
 
 HRESULT RegistryManager::writeExpandableString(const Key& key, const wstring& value_name, const wstring& value)
 {
-	// check limits before truncating value
-	size_t bytes_to_write = (value.size() + 1) * sizeof(WCHAR);
-	if(bytes_to_write > ULONG_MAX)
-		return E_INVALIDARG;
+    // check limits before truncating value
+    size_t bytes_to_write = (value.size() + 1) * sizeof(WCHAR);
+    if(bytes_to_write > ULONG_MAX)
+        return E_INVALIDARG;
 
-	return writeValue(key, value_name, REG_EXPAND_SZ, reinterpret_cast<const BYTE*>(value.data()), static_cast<DWORD>(bytes_to_write));
+    return writeValue(key, value_name, REG_EXPAND_SZ, reinterpret_cast<const BYTE*>(value.data()), static_cast<DWORD>(bytes_to_write));
 }
 
 HRESULT RegistryManager::writeData(const Key& key, const wstring& value_name, const BYTE* data, DWORD data_size)
 {
-	return writeValue(key, value_name, REG_BINARY, data, data_size);
+    return writeValue(key, value_name, REG_BINARY, data, data_size);
 }
 
 HRESULT RegistryManager::removeKey(const Key& key)
 {
-	LONG delete_result = RegDeleteKeyW(key._root, key._subkey.data());
-	if (delete_result != ERROR_SUCCESS)
-	{
-		_error_buffer.push_back(ErrorRecord(key, L"", delete_result, L"RegDeleteKey"));
-		return HRESULT_FROM_WIN32(delete_result);
-	}
+    LONG delete_result = RegDeleteKeyW(key._root, key._subkey.data());
+    if (delete_result != ERROR_SUCCESS)
+    {
+        _error_buffer.push_back(ErrorRecord(key, L"", delete_result, L"RegDeleteKey"));
+        return HRESULT_FROM_WIN32(delete_result);
+    }
 
-	return S_OK;
+    return S_OK;
 }
 
 HRESULT RegistryManager::removeTree(const Key& key)
 {
-	LONG delete_result = RegDeleteTreeW(key._root, key._subkey.data());
-	if (delete_result != ERROR_SUCCESS)
-	{
-		_error_buffer.push_back(ErrorRecord(key, L"", delete_result, L"RegDeleteTree"));
-		return HRESULT_FROM_WIN32(delete_result);
-	}
+    LONG delete_result = RegDeleteTreeW(key._root, key._subkey.data());
+    if (delete_result != ERROR_SUCCESS)
+    {
+        _error_buffer.push_back(ErrorRecord(key, L"", delete_result, L"RegDeleteTree"));
+        return HRESULT_FROM_WIN32(delete_result);
+    }
 
-	return S_OK;
+    return S_OK;
 }
 
 const vector<RegistryManager::ErrorRecord>& RegistryManager::getErrors() const
 {
-	return _error_buffer;
+    return _error_buffer;
 }
 
 void RegistryManager::showErrors() const
 {
-	wstring text;
+    wstring text;
 
-	for(size_t i = 0; i < _error_buffer.size() && i < 10; ++i)
-	{
-		const ErrorRecord& e = _error_buffer[i];
+    for(size_t i = 0; i < _error_buffer.size() && i < 10; ++i)
+    {
+        const ErrorRecord& e = _error_buffer[i];
 
-		wstring root_str = L"unknown root";
+        wstring root_str = L"unknown root";
 
-		if(e._key._root == HKEY_CLASSES_ROOT)
-			root_str = L"HKEY_CLASSES_ROOT";
-		if(e._key._root == HKEY_CURRENT_USER)
-			root_str = L"HKEY_CURRENT_USER";
-		if(e._key._root == HKEY_LOCAL_MACHINE)
-			root_str = L"HKEY_LOCAL_MACHINE";
-		if(e._key._root == HKEY_USERS)
-			root_str = L"HKEY_USERS";
-		if(e._key._root == HKEY_CURRENT_CONFIG)
-			root_str = L"HKEY_CURRENT_CONFIG";
+        if(e._key._root == HKEY_CLASSES_ROOT)
+            root_str = L"HKEY_CLASSES_ROOT";
+        if(e._key._root == HKEY_CURRENT_USER)
+            root_str = L"HKEY_CURRENT_USER";
+        if(e._key._root == HKEY_LOCAL_MACHINE)
+            root_str = L"HKEY_LOCAL_MACHINE";
+        if(e._key._root == HKEY_USERS)
+            root_str = L"HKEY_USERS";
+        if(e._key._root == HKEY_CURRENT_CONFIG)
+            root_str = L"HKEY_CURRENT_CONFIG";
 
-		text += L"(" + root_str + L"," + e._key._subkey + L")\n";
-		if(!e._value_name.empty())
-			text += L"Value: " + e._value_name + L"\n";
-		text += e._error + L"\n";
-	}
+        text += L"(" + root_str + L"," + e._key._subkey + L")\n";
+        if(!e._value_name.empty())
+            text += L"Value: " + e._value_name + L"\n";
+        text += e._error + L"\n";
+    }
 
-	MessageBoxW(0, text.data(), 0, 0);
+    MessageBoxW(0, text.data(), 0, 0);
 }

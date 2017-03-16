@@ -25,34 +25,34 @@ limitations under the License.
 class flifBitmapFrameDecode : public IWICBitmapFrameDecode
 {
 public:
-	flifBitmapFrameDecode();
-	~flifBitmapFrameDecode();
+    flifBitmapFrameDecode();
+    ~flifBitmapFrameDecode();
 
-	// IUnknown methods
+    // IUnknown methods
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** ppvObject) override;
-	virtual ULONG STDMETHODCALLTYPE AddRef() override { return _ref_count.addRef(); }
-	virtual ULONG STDMETHODCALLTYPE Release() override { return _ref_count.releaseRef(this); }
+    virtual ULONG STDMETHODCALLTYPE AddRef() override { return _ref_count.addRef(); }
+    virtual ULONG STDMETHODCALLTYPE Release() override { return _ref_count.releaseRef(this); }
 
-	// IWICBitmapSource methods
-	virtual HRESULT STDMETHODCALLTYPE GetSize(UINT* puiWidth, UINT* puiHeight) override;
+    // IWICBitmapSource methods
+    virtual HRESULT STDMETHODCALLTYPE GetSize(UINT* puiWidth, UINT* puiHeight) override;
     virtual HRESULT STDMETHODCALLTYPE GetPixelFormat(WICPixelFormatGUID* pPixelFormat) override;
     virtual HRESULT STDMETHODCALLTYPE GetResolution(double* pDpiX, double* pDpiY) override;
     virtual HRESULT STDMETHODCALLTYPE CopyPalette(IWICPalette* pIPalette) override;
     virtual HRESULT STDMETHODCALLTYPE CopyPixels(const WICRect* prc, UINT cbStride, UINT cbBufferSize, BYTE* pbBuffer) override;
 
-	// IWICBitmapFrameDecode methods
-	virtual HRESULT STDMETHODCALLTYPE GetMetadataQueryReader( IWICMetadataQueryReader** metadata_query_reader) override;
+    // IWICBitmapFrameDecode methods
+    virtual HRESULT STDMETHODCALLTYPE GetMetadataQueryReader( IWICMetadataQueryReader** metadata_query_reader) override;
     virtual HRESULT STDMETHODCALLTYPE GetColorContexts(UINT cCount, IWICColorContext** color_contexts, UINT* actual_count) override;
     virtual HRESULT STDMETHODCALLTYPE GetThumbnail( IWICBitmapSource** thumbnail) override;
 
-	void extractFrame(const flifDecoder& decoder, int index);
+    void extractFrame(const flifDecoder& decoder, int index);
 
 private:
-	ComRefCountImpl _ref_count;
+    ComRefCountImpl _ref_count;
 
-	uint32_t _width;
-	uint32_t _height;
-	vector<flifRGBA> _pixels;
+    uint32_t _width;
+    uint32_t _height;
+    vector<flifRGBA> _pixels;
 };
 
 /*!
@@ -62,16 +62,16 @@ private:
 class flifBitmapDecoder : public IWICBitmapDecoder
 {
 public:
-	flifBitmapDecoder();
-	~flifBitmapDecoder();
+    flifBitmapDecoder();
+    ~flifBitmapDecoder();
 
-	// IUnknown methods
+    // IUnknown methods
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** ppvObject) override;
-	virtual ULONG STDMETHODCALLTYPE AddRef() override { return _ref_count.addRef(); }
-	virtual ULONG STDMETHODCALLTYPE Release() override { return _ref_count.releaseRef(this); }
+    virtual ULONG STDMETHODCALLTYPE AddRef() override { return _ref_count.addRef(); }
+    virtual ULONG STDMETHODCALLTYPE Release() override { return _ref_count.releaseRef(this); }
 
-	// IWICBitmapDecoder methods
-	virtual HRESULT STDMETHODCALLTYPE QueryCapability(IStream* stream, DWORD* capability) override;
+    // IWICBitmapDecoder methods
+    virtual HRESULT STDMETHODCALLTYPE QueryCapability(IStream* stream, DWORD* capability) override;
     virtual HRESULT STDMETHODCALLTYPE Initialize(IStream* stream, WICDecodeOptions cacheOptions) override;
     virtual HRESULT STDMETHODCALLTYPE GetContainerFormat(GUID* container_format) override;
     virtual HRESULT STDMETHODCALLTYPE GetDecoderInfo(IWICBitmapDecoderInfo** decoder_info) override;
@@ -83,17 +83,17 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetFrameCount(UINT* count) override;
     virtual HRESULT STDMETHODCALLTYPE GetFrame(UINT index, IWICBitmapFrameDecode** bitmap_frame) override;
 
-	static void registerClass(RegistryManager& reg);
-	static void unregisterClass(RegistryManager& reg);
+    static void registerClass(RegistryManager& reg);
+    static void unregisterClass(RegistryManager& reg);
 
-	static HRESULT checkStreamIsFLIF(IStream* stream);
-	static HRESULT streamReadAll(IStream* stream, vector<BYTE>& bytes);
+    static HRESULT checkStreamIsFLIF(IStream* stream);
+    static HRESULT streamReadAll(IStream* stream, vector<BYTE>& bytes);
 
 private:
-	ComRefCountImpl _ref_count;
+    ComRefCountImpl _ref_count;
 
-	CriticalSection _cs_init_data;
-	bool _initialized;
-	flifDecoder _decoder;
-	vector<ComPtr<flifBitmapFrameDecode>> _frames;
+    CriticalSection _cs_init_data;
+    bool _initialized;
+    flifDecoder _decoder;
+    vector<ComPtr<flifBitmapFrameDecode>> _frames;
 };

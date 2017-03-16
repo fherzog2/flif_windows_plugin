@@ -36,7 +36,7 @@ ULONG g_dll_object_ref_count = 0;
 */
 void DllAddRef()
 {
-	InterlockedIncrement(&g_dll_object_ref_count);
+    InterlockedIncrement(&g_dll_object_ref_count);
 }
 
 /*!
@@ -45,41 +45,41 @@ void DllAddRef()
 */
 void DllRelease()
 {
-	InterlockedDecrement(&g_dll_object_ref_count);
+    InterlockedDecrement(&g_dll_object_ref_count);
 }
 
 HINSTANCE g_module_handle = 0;
 
 wstring getThisLibraryPath()
 {
-	vector<WCHAR> buffer;
-	buffer.resize(256);
+    vector<WCHAR> buffer;
+    buffer.resize(256);
 
-	for(DWORD n = 256; n <= 4096; n *= 2)
-	{
-		buffer.resize(n);
-		DWORD ret = GetModuleFileNameW(g_module_handle, buffer.data(), n);
-		if(ret == 0)
-			throw bad_alloc();
-		if(ret < n)
-			return buffer.data();
-	}
+    for(DWORD n = 256; n <= 4096; n *= 2)
+    {
+        buffer.resize(n);
+        DWORD ret = GetModuleFileNameW(g_module_handle, buffer.data(), n);
+        if(ret == 0)
+            throw bad_alloc();
+        if(ret < n)
+            return buffer.data();
+    }
 
-	throw bad_alloc();
+    throw bad_alloc();
 }
 
 wstring to_wstring(const GUID& guid)
 {
-	OLECHAR buffer[256];
-	if(StringFromGUID2(guid, buffer, 256) == 0)
-		throw bad_alloc();
+    OLECHAR buffer[256];
+    if(StringFromGUID2(guid, buffer, 256) == 0)
+        throw bad_alloc();
 
-	return wstring(buffer);
+    return wstring(buffer);
 }
 
 void clearThumbnailCache()
 {
-	SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
+    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
 }
 
 STDAPI DllRegisterServer()
@@ -88,85 +88,85 @@ STDAPI DllRegisterServer()
     // because the installer can write registry entries. So this is duplicate code.
     // Still, during development it helps to just call regsvr32 on the DLL
     
-	CUSTOM_TRY
+    CUSTOM_TRY
 
-		RegistryManager reg;
-		flifBitmapDecoder::registerClass(reg);
-		flifPropertyHandler::registerClass(reg);
+        RegistryManager reg;
+        flifBitmapDecoder::registerClass(reg);
+        flifPropertyHandler::registerClass(reg);
 
-		if(!reg.getErrors().empty())
-		{
-			reg.showErrors();
-			return reg.getErrors().front()._error_code;
-		}
+        if(!reg.getErrors().empty())
+        {
+            reg.showErrors();
+            return reg.getErrors().front()._error_code;
+        }
 
-		SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
+        SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
 
-		return S_OK;
+        return S_OK;
 
-	CUSTOM_CATCH_RETURN_HRESULT
+    CUSTOM_CATCH_RETURN_HRESULT
 }
 
 STDAPI DllUnregisterServer()
 {
-	CUSTOM_TRY
+    CUSTOM_TRY
 
-		RegistryManager reg;
-		flifBitmapDecoder::unregisterClass(reg);
-		flifPropertyHandler::unregisterClass(reg);
-		
-		if(!reg.getErrors().empty())
-		{
-			reg.showErrors();
-			return reg.getErrors().front()._error_code;
-		}
+        RegistryManager reg;
+        flifBitmapDecoder::unregisterClass(reg);
+        flifPropertyHandler::unregisterClass(reg);
 
-		return S_OK;
+        if(!reg.getErrors().empty())
+        {
+            reg.showErrors();
+            return reg.getErrors().front()._error_code;
+        }
 
-	CUSTOM_CATCH_RETURN_HRESULT
+        return S_OK;
+
+    CUSTOM_CATCH_RETURN_HRESULT
 }
 
 STDAPI DllGetClassObject(REFCLSID clsid, REFIID iid, LPVOID *ppv)
 {
-	CUSTOM_TRY
+    CUSTOM_TRY
 
-		if (ppv == 0)
-			return E_INVALIDARG;
+        if (ppv == 0)
+            return E_INVALIDARG;
 
-		if(IsEqualGUID(clsid, CLSID_flifBitmapDecoder))
-		{
-			ComPtr<ClassFactory<flifBitmapDecoder>> cf(new ClassFactory<flifBitmapDecoder>());
-			return cf->QueryInterface(iid, ppv);
-		}
-		if(IsEqualGUID(clsid, CLSID_flifPropertyHandler))
-		{
-			ComPtr<ClassFactory<flifPropertyHandler>> cf(new ClassFactory<flifPropertyHandler>());
-			return cf->QueryInterface(iid, ppv);
-		}
+        if(IsEqualGUID(clsid, CLSID_flifBitmapDecoder))
+        {
+            ComPtr<ClassFactory<flifBitmapDecoder>> cf(new ClassFactory<flifBitmapDecoder>());
+            return cf->QueryInterface(iid, ppv);
+        }
+        if(IsEqualGUID(clsid, CLSID_flifPropertyHandler))
+        {
+            ComPtr<ClassFactory<flifPropertyHandler>> cf(new ClassFactory<flifPropertyHandler>());
+            return cf->QueryInterface(iid, ppv);
+        }
 
-		return CLASS_E_CLASSNOTAVAILABLE;
+        return CLASS_E_CLASSNOTAVAILABLE;
 
-	CUSTOM_CATCH_RETURN_HRESULT
+    CUSTOM_CATCH_RETURN_HRESULT
 }
 
 STDAPI DllCanUnloadNow()
 {
-	CUSTOM_TRY
+    CUSTOM_TRY
 
-		if(g_dll_object_ref_count == 0)
-			return S_OK;
-		else
-			return S_FALSE;
+        if(g_dll_object_ref_count == 0)
+            return S_OK;
+        else
+            return S_FALSE;
 
-	CUSTOM_CATCH_RETURN_HRESULT
+    CUSTOM_CATCH_RETURN_HRESULT
 }
 
 BOOL WINAPI DllMain(__in  HINSTANCE hinstDLL, __in  DWORD fdwReason, __in  LPVOID lpvReserved)
 {
-	if (fdwReason == DLL_PROCESS_ATTACH)
-	{
-		DisableThreadLibraryCalls(hinstDLL);
-		g_module_handle = hinstDLL;
-	}
-	return TRUE;
+    if (fdwReason == DLL_PROCESS_ATTACH)
+    {
+        DisableThreadLibraryCalls(hinstDLL);
+        g_module_handle = hinstDLL;
+    }
+    return TRUE;
 }

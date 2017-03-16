@@ -24,48 +24,48 @@ using namespace std;
 class RegistryManager
 {
 public:
-	class Key
-	{
-	public:
-		Key()
-			: _root(HKEY_CURRENT_USER)
-		{
-		}
-		Key(HKEY root, const wstring& subkey)
-			: _root(root)
-			, _subkey(subkey)
-		{
-		}
+    class Key
+    {
+    public:
+        Key()
+            : _root(HKEY_CURRENT_USER)
+        {
+        }
+        Key(HKEY root, const wstring& subkey)
+            : _root(root)
+            , _subkey(subkey)
+        {
+        }
 
-		HKEY _root;
-		wstring _subkey;
-	};
+        HKEY _root;
+        wstring _subkey;
+    };
 
-	class ErrorRecord
-	{
-	public:
-		ErrorRecord(const Key& key, wstring value_name, LONG error, wstring context);
+    class ErrorRecord
+    {
+    public:
+        ErrorRecord(const Key& key, wstring value_name, LONG error, wstring context);
 
-		Key _key;
-		wstring _value_name;
+        Key _key;
+        wstring _value_name;
 
-		HRESULT _error_code;
-		wstring _error;
-	};
+        HRESULT _error_code;
+        wstring _error;
+    };
 
-	static Key key(HKEY root, const wstring& subkey);
+    static Key key(HKEY root, const wstring& subkey);
 
-	HRESULT writeDWORD(const Key& key, const wstring& value_name, DWORD value);
-	HRESULT writeString(const Key& key, const wstring& value_name, const wstring& value);
-	HRESULT writeExpandableString(const Key& key, const wstring& value_name, const wstring& value);
-	HRESULT writeData(const Key& key, const wstring& value_name, const BYTE* data, DWORD data_size);
-	HRESULT removeKey(const Key& key);
-	HRESULT removeTree(const Key& key);
+    HRESULT writeDWORD(const Key& key, const wstring& value_name, DWORD value);
+    HRESULT writeString(const Key& key, const wstring& value_name, const wstring& value);
+    HRESULT writeExpandableString(const Key& key, const wstring& value_name, const wstring& value);
+    HRESULT writeData(const Key& key, const wstring& value_name, const BYTE* data, DWORD data_size);
+    HRESULT removeKey(const Key& key);
+    HRESULT removeTree(const Key& key);
 
-	const vector<ErrorRecord>& getErrors() const;
-	void showErrors() const;
+    const vector<ErrorRecord>& getErrors() const;
+    void showErrors() const;
 private:
-	HRESULT writeValue(const Key& key, const wstring& value_name, DWORD value_type, const BYTE* value_ptr, DWORD value_size);
+    HRESULT writeValue(const Key& key, const wstring& value_name, DWORD value_type, const BYTE* value_ptr, DWORD value_size);
 
-	vector<ErrorRecord> _error_buffer;
+    vector<ErrorRecord> _error_buffer;
 };

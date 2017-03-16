@@ -34,32 +34,32 @@ typedef HRESULT (STDAPICALLTYPE *fpDllGetClassObject)(REFCLSID, REFIID, LPVOID);
 
 inline string formatHRESULT(HRESULT hr)
 {
-	_com_error e(hr);
-	return e.ErrorMessage();
+    _com_error e(hr);
+    return e.ErrorMessage();
 }
 
 vector<BYTE> read_file(const string& filename)
 {
-	ifstream file(filename, std::ios::binary);
-	vector<BYTE> result;
+    ifstream file(filename, std::ios::binary);
+    vector<BYTE> result;
 
-	for (auto it = std::istreambuf_iterator<char>(file); it != std::istreambuf_iterator<char>(); ++it)
-		result.push_back(*it);
+    for (auto it = std::istreambuf_iterator<char>(file); it != std::istreambuf_iterator<char>(); ++it)
+        result.push_back(*it);
 
-	return result;
+    return result;
 }
 
 void debug_out(const string& message)
 {
-	printf("%s\n", message.data());
-	fflush(stdout);
+    printf("%s\n", message.data());
+    fflush(stdout);
 }
 
 #define MY_ASSERT(condition, message) \
     if((condition)) { \
-		string message2 = __FILE__ + string("(") + to_string(__LINE__) + "): " + (message); \
+        string message2 = __FILE__ + string("(") + to_string(__LINE__) + "): " + (message); \
         debug_out(message2);\
-		fflush(stdout);\
+        fflush(stdout);\
         return 1; \
     }
 
@@ -183,49 +183,49 @@ HRESULT save_bitmapframe(IWICBitmapFrameDecode* frame, const string& filename)
 
 int test_file(const string& filename, IClassFactory* class_factory_decoder, IClassFactory* class_factory_props)
 {
-	HRESULT hr = S_OK;
+    HRESULT hr = S_OK;
 
-	debug_out("Testing file " + filename);
+    debug_out("Testing file " + filename);
 
-	auto file_content = read_file(filename);
-	MY_ASSERT(file_content.empty(), "Read file failed")
+    auto file_content = read_file(filename);
+    MY_ASSERT(file_content.empty(), "Read file failed")
 
-	ComPtr<IStream> stream;
-	stream.reset(SHCreateMemStream(file_content.data(), static_cast<UINT>(file_content.size())));
-	MY_ASSERT(stream.get() == 0, "CreateMemStream failed")
+    ComPtr<IStream> stream;
+    stream.reset(SHCreateMemStream(file_content.data(), static_cast<UINT>(file_content.size())));
+    MY_ASSERT(stream.get() == 0, "CreateMemStream failed")
 
-	{
-		ComPtr<IWICBitmapDecoder> decoder;
-		hr = class_factory_decoder->CreateInstance(0, IID_IWICBitmapDecoder, (void**)decoder.ptrptr());
-		HR_ASSERT(hr)
+    {
+        ComPtr<IWICBitmapDecoder> decoder;
+        hr = class_factory_decoder->CreateInstance(0, IID_IWICBitmapDecoder, (void**)decoder.ptrptr());
+        HR_ASSERT(hr)
 
-		hr = decoder->Initialize(stream.get(), WICDecodeMetadataCacheOnDemand);
-		HR_ASSERT(hr)
+        hr = decoder->Initialize(stream.get(), WICDecodeMetadataCacheOnDemand);
+        HR_ASSERT(hr)
 
-		ComPtr<IWICBitmapFrameDecode> frame;
-		hr = decoder->GetFrame(0, frame.ptrptr());
-		HR_ASSERT(hr)
+        ComPtr<IWICBitmapFrameDecode> frame;
+        hr = decoder->GetFrame(0, frame.ptrptr());
+        HR_ASSERT(hr)
 
-		UINT w;
-		UINT h;
-		hr = frame->GetSize(&w, &h);
-		HR_ASSERT(hr)
+        UINT w;
+        UINT h;
+        hr = frame->GetSize(&w, &h);
+        HR_ASSERT(hr)
 
-		{
-			WICRect line_rect = { 0, 0, w, 1 };
-			vector<BYTE> line;
-			line.resize(w * 4);
-			hr = frame->CopyPixels(&line_rect, w * 4, static_cast<UINT>(line.size()), line.data());
-			HR_ASSERT(hr)
-		}
+        {
+            WICRect line_rect = { 0, 0, w, 1 };
+            vector<BYTE> line;
+            line.resize(w * 4);
+            hr = frame->CopyPixels(&line_rect, w * 4, static_cast<UINT>(line.size()), line.data());
+            HR_ASSERT(hr)
+        }
 
-		{
-			WICRect full_rect = { 0, 0, w, h };
-			vector<BYTE> full;
-			full.resize(w * h * 4);
-			hr = frame->CopyPixels(&full_rect, w * 4, static_cast<UINT>(full.size()), full.data());
-			HR_ASSERT(hr)
-		}
+        {
+            WICRect full_rect = { 0, 0, w, h };
+            vector<BYTE> full;
+            full.resize(w * h * 4);
+            hr = frame->CopyPixels(&full_rect, w * 4, static_cast<UINT>(full.size()), full.data());
+            HR_ASSERT(hr)
+        }
 
         // save the decoded image as bitmap so we can verify the plugin works without actually installing it
 
@@ -237,48 +237,48 @@ int test_file(const string& filename, IClassFactory* class_factory_decoder, ICla
 
         hr = save_bitmapframe(frame.get(), decoded_filename);
         HR_ASSERT(hr)
-	}
+    }
 
-	LARGE_INTEGER start_pos;
-	start_pos.QuadPart = 0;
-	hr = stream->Seek(start_pos, STREAM_SEEK_SET, 0);
-	HR_ASSERT(hr)
+    LARGE_INTEGER start_pos;
+    start_pos.QuadPart = 0;
+    hr = stream->Seek(start_pos, STREAM_SEEK_SET, 0);
+    HR_ASSERT(hr)
 
-	{
-		ComPtr<IPropertyStore> props;
-		hr = class_factory_props->CreateInstance(0, IID_IPropertyStore, (void**)props.ptrptr());
-		HR_ASSERT(hr)
+    {
+        ComPtr<IPropertyStore> props;
+        hr = class_factory_props->CreateInstance(0, IID_IPropertyStore, (void**)props.ptrptr());
+        HR_ASSERT(hr)
 
-		ComPtr<IInitializeWithStream> props_init;
-		hr = props->QueryInterface(IID_IInitializeWithStream, (void**)props_init.ptrptr());
-		HR_ASSERT(hr)
+        ComPtr<IInitializeWithStream> props_init;
+        hr = props->QueryInterface(IID_IInitializeWithStream, (void**)props_init.ptrptr());
+        HR_ASSERT(hr)
 
-		hr = props_init->Initialize(stream.get(), STGM_READ);
-		HR_ASSERT(hr)
+        hr = props_init->Initialize(stream.get(), STGM_READ);
+        HR_ASSERT(hr)
 
-		DWORD count;
-		hr = props->GetCount(&count);
-		HR_ASSERT(hr)
-		MY_ASSERT(count == 0, "No attributes");
+        DWORD count;
+        hr = props->GetCount(&count);
+        HR_ASSERT(hr)
+        MY_ASSERT(count == 0, "No attributes");
 
         debug_out("Printing metadata");
 
         CoInitialize(0);
 
-		for(DWORD i = 0; i < count; ++i)
-		{
-			PROPERTYKEY key;
-			hr = props->GetAt(i, &key);
-			HR_ASSERT(hr)
+        for(DWORD i = 0; i < count; ++i)
+        {
+            PROPERTYKEY key;
+            hr = props->GetAt(i, &key);
+            HR_ASSERT(hr)
 
             PWSTR key_string;
             hr = PSGetNameFromPropertyKey (key, &key_string);
             HR_ASSERT(hr)
 
-			PROPVARIANT var;
-			PropVariantInit(&var);
-			hr = props->GetValue(key, &var);
-			HR_ASSERT(hr)
+            PROPVARIANT var;
+            PropVariantInit(&var);
+            hr = props->GetValue(key, &var);
+            HR_ASSERT(hr)
 
             bool printed = false;
 
@@ -301,12 +301,12 @@ int test_file(const string& filename, IClassFactory* class_factory_decoder, ICla
                 wprintf(L"    %s\tUnsupported datatype, update this printing code\n", key_string);
 
             CoTaskMemFree(key_string);
-		}
+        }
 
         CoUninitialize();
-	}
+    }
 
-	return 0;
+    return 0;
 }
 
 int main(int argc, char** args)
@@ -321,53 +321,53 @@ int main(int argc, char** args)
     
     auto get_class_object = reinterpret_cast<fpDllGetClassObject>(GetProcAddress(plugin, "DllGetClassObject"));
     
-	ComPtr<IClassFactory> class_factory_decoder;
-	HRESULT hr = get_class_object(CLSID_flifBitmapDecoder, IID_IClassFactory, class_factory_decoder.ptrptr());
+    ComPtr<IClassFactory> class_factory_decoder;
+    HRESULT hr = get_class_object(CLSID_flifBitmapDecoder, IID_IClassFactory, class_factory_decoder.ptrptr());
     HR_ASSERT(hr)
 
-	ComPtr<IClassFactory> class_factory_props;
-	hr = get_class_object(CLSID_flifPropertyHandler, IID_IClassFactory, class_factory_props.ptrptr());
+    ComPtr<IClassFactory> class_factory_props;
+    hr = get_class_object(CLSID_flifPropertyHandler, IID_IClassFactory, class_factory_props.ptrptr());
     HR_ASSERT(hr)
 
-	// test premade file
+    // test premade file
 
-	if(test_file(args[1], class_factory_decoder.get(), class_factory_props.get()) != 0)
-		return 1;
+    if(test_file(args[1], class_factory_decoder.get(), class_factory_props.get()) != 0)
+        return 1;
 
-	// create fresh file
+    // create fresh file
 
-	debug_out("creating fresh image");
+    debug_out("creating fresh image");
 
-	FLIF_ENCODER* encoder = flif_create_encoder();
-	MY_ASSERT(encoder == 0, "flif_create_encoder failed");
+    FLIF_ENCODER* encoder = flif_create_encoder();
+    MY_ASSERT(encoder == 0, "flif_create_encoder failed");
 
-	const uint32_t SIZE = 256;
-	FLIF_IMAGE* image = flif_create_image(SIZE, SIZE);
-	MY_ASSERT(image == 0, "flif_create_image failed");
+    const uint32_t SIZE = 256;
+    FLIF_IMAGE* image = flif_create_image(SIZE, SIZE);
+    MY_ASSERT(image == 0, "flif_create_image failed");
 
-	for(uint32_t y = 0; y < SIZE; ++y)
-	{
-		flifRGBA rgba[SIZE];
-		for(uint32_t x = 0; x < SIZE; ++x)
-		{
-			rgba[x].r = x;
-			rgba[x].g = y;
-			rgba[x].b = 0;
-			rgba[x].a = 255;
-		}
-		flif_image_write_row_RGBA8(image, y, rgba, sizeof(rgba));
-	}
+    for(uint32_t y = 0; y < SIZE; ++y)
+    {
+        flifRGBA rgba[SIZE];
+        for(uint32_t x = 0; x < SIZE; ++x)
+        {
+            rgba[x].r = x;
+            rgba[x].g = y;
+            rgba[x].b = 0;
+            rgba[x].a = 255;
+        }
+        flif_image_write_row_RGBA8(image, y, rgba, sizeof(rgba));
+    }
 
-	debug_out("start encoding with FLIF");
+    debug_out("start encoding with FLIF");
 
-	flif_encoder_add_image(encoder, image);
+    flif_encoder_add_image(encoder, image);
 
-	MY_ASSERT(flif_encoder_encode_file(encoder, "test.flif") != 1, "flif_encoder_encode_file failed")
+    MY_ASSERT(flif_encoder_encode_file(encoder, "test.flif") != 1, "flif_encoder_encode_file failed")
 
-	// test with fresh file
+    // test with fresh file
 
-	if(test_file("test.flif", class_factory_decoder.get(), class_factory_props.get()) != 0)
-		return 1;
+    if(test_file("test.flif", class_factory_decoder.get(), class_factory_props.get()) != 0)
+        return 1;
 
-	return 0;
+    return 0;
 }

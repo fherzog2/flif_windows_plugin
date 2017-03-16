@@ -32,12 +32,12 @@ using namespace std;
 */
 
 #define CUSTOM_CATCH_RETURN_HRESULT } \
-	catch(const bad_alloc&) {\
-		return E_OUTOFMEMORY; \
-	} \
-	catch(...) {\
-		return E_UNEXPECTED; \
-	} \
+    catch(const bad_alloc&) {\
+        return E_OUTOFMEMORY; \
+    } \
+    catch(...) {\
+        return E_UNEXPECTED; \
+    } \
 
 /*!
 * RAII class for CRITICAL_SECTION.
@@ -46,26 +46,26 @@ using namespace std;
 class CriticalSection
 {
 public:
-	CriticalSection()
-	{
-		InitializeCriticalSection(&_cs);
-	}
-	~CriticalSection()
-	{
-		DeleteCriticalSection(&_cs);
-	}
+    CriticalSection()
+    {
+        InitializeCriticalSection(&_cs);
+    }
+    ~CriticalSection()
+    {
+        DeleteCriticalSection(&_cs);
+    }
 
-	void lock()
-	{
-		EnterCriticalSection(&_cs);
-	}
+    void lock()
+    {
+        EnterCriticalSection(&_cs);
+    }
 
-	void unlock()
-	{
-		LeaveCriticalSection(&_cs);
-	}
+    void unlock()
+    {
+        LeaveCriticalSection(&_cs);
+    }
 private:
-	CRITICAL_SECTION _cs;
+    CRITICAL_SECTION _cs;
 };
 
 /*!
@@ -79,12 +79,12 @@ class ComPtr
 {
 public:
     ComPtr()
-		: _ptr(0)
+        : _ptr(0)
     {
     }
 
     ComPtr(T* ptr)
-		: _ptr(0)
+        : _ptr(0)
     {
         reset(ptr);
     }
@@ -95,7 +95,7 @@ public:
     }
     
     ComPtr(const ComPtr& other)
-		: _ptr()
+        : _ptr()
     {
         operator=(other);
     }
@@ -107,7 +107,7 @@ public:
     }
     
     ComPtr(ComPtr&& other)
-		: _ptr(0)
+        : _ptr(0)
     {
         operator=(other);
     }
@@ -119,22 +119,22 @@ public:
         return *this;
     }
 
-	/*!
-	* Access referenced instance.
-	*/
+    /*!
+    * Access referenced instance.
+    */
     T* get() const
     {
         return _ptr;
     }
 
-	T* operator->() const
-	{
-		return _ptr;
-	}
+    T* operator->() const
+    {
+        return _ptr;
+    }
 
-	/*!
-	* Assign a new instance, possibly releasing a previously referenced instance.
-	*/
+    /*!
+    * Assign a new instance, possibly releasing a previously referenced instance.
+    */
     void reset(T* ptr)
     {
         if(ptr)
@@ -145,10 +145,10 @@ public:
         _ptr = ptr;
     }
 
-	/*!
-	* Get address of internal pointer.
-	* Some COM functions require this.
-	*/
+    /*!
+    * Get address of internal pointer.
+    * Some COM functions require this.
+    */
     T** ptrptr()
     {
         reset(0);
@@ -166,7 +166,7 @@ class ComRefCountImpl
 {
 public:
     ComRefCountImpl()
-		: _rc(0)
+        : _rc(0)
     {
     }
     
@@ -175,7 +175,7 @@ public:
         return InterlockedIncrement(&_rc);
     }
     
-	template<class T>
+    template<class T>
     int releaseRef(T* com_object)
     {
         ULONG count = InterlockedDecrement(&_rc);

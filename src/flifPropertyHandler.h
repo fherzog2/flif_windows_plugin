@@ -24,35 +24,35 @@ limitations under the License.
 class flifPropertyHandler : public IInitializeWithStream, public IPropertyStore
 {
 public:
-	flifPropertyHandler();
-	~flifPropertyHandler();
+    flifPropertyHandler();
+    ~flifPropertyHandler();
 
-	// IUnknown methods
-	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** ppvObject) override;
-	virtual ULONG STDMETHODCALLTYPE AddRef() override { return _ref_count.addRef(); }
-	virtual ULONG STDMETHODCALLTYPE Release() override { return _ref_count.releaseRef(this); }
+    // IUnknown methods
+    virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** ppvObject) override;
+    virtual ULONG STDMETHODCALLTYPE AddRef() override { return _ref_count.addRef(); }
+    virtual ULONG STDMETHODCALLTYPE Release() override { return _ref_count.releaseRef(this); }
 
-	// IPropertyStore methods
-	virtual HRESULT STDMETHODCALLTYPE GetCount(DWORD *cProps) override;
-	virtual HRESULT STDMETHODCALLTYPE GetAt( DWORD iProp, PROPERTYKEY *pkey) override;
-	virtual HRESULT STDMETHODCALLTYPE GetValue(REFPROPERTYKEY key, PROPVARIANT *pv) override;
-	virtual HRESULT STDMETHODCALLTYPE SetValue(REFPROPERTYKEY key, REFPROPVARIANT propvar) override;
-	virtual HRESULT STDMETHODCALLTYPE Commit(void) override;
+    // IPropertyStore methods
+    virtual HRESULT STDMETHODCALLTYPE GetCount(DWORD *cProps) override;
+    virtual HRESULT STDMETHODCALLTYPE GetAt( DWORD iProp, PROPERTYKEY *pkey) override;
+    virtual HRESULT STDMETHODCALLTYPE GetValue(REFPROPERTYKEY key, PROPVARIANT *pv) override;
+    virtual HRESULT STDMETHODCALLTYPE SetValue(REFPROPERTYKEY key, REFPROPVARIANT propvar) override;
+    virtual HRESULT STDMETHODCALLTYPE Commit(void) override;
 
-	// IInitializeWithStream methods
-	virtual HRESULT STDMETHODCALLTYPE Initialize(IStream *pstream, DWORD grfMode) override;
+    // IInitializeWithStream methods
+    virtual HRESULT STDMETHODCALLTYPE Initialize(IStream *pstream, DWORD grfMode) override;
 
-	static void registerClass(RegistryManager& reg);
-	static void unregisterClass(RegistryManager& reg);
+    static void registerClass(RegistryManager& reg);
+    static void unregisterClass(RegistryManager& reg);
 
 private:
-	ComRefCountImpl _ref_count;
+    ComRefCountImpl _ref_count;
 
-	CriticalSection _cs_init;
-	bool _is_initialized;
+    CriticalSection _cs_init;
+    bool _is_initialized;
 
-	// properties
-	uint32_t _width;
-	uint32_t _height;
-	uint8_t _bitdepth;
+    // properties
+    uint32_t _width;
+    uint32_t _height;
+    uint8_t _bitdepth;
 };

@@ -24,156 +24,156 @@ limitations under the License.
 class flifDecoder
 {
 public:
-	flifDecoder()
-		: _decoder(flif_create_decoder())
-	{
-	}
+    flifDecoder()
+        : _decoder(flif_create_decoder())
+    {
+    }
 
-	~flifDecoder()
-	{
-		if(_decoder != 0)
-			flif_destroy_decoder(_decoder);
-		_decoder = 0;
-	}
+    ~flifDecoder()
+    {
+        if(_decoder != 0)
+            flif_destroy_decoder(_decoder);
+        _decoder = 0;
+    }
 
-	flifDecoder(flifDecoder&& other)
-	{
-		_decoder = other._decoder;
-		other._decoder = 0;
-	}
+    flifDecoder(flifDecoder&& other)
+    {
+        _decoder = other._decoder;
+        other._decoder = 0;
+    }
 
-	flifDecoder& operator=(flifDecoder&& other)
-	{
-		_decoder = other._decoder;
-		other._decoder = 0;
-		return *this;
-	}
+    flifDecoder& operator=(flifDecoder&& other)
+    {
+        _decoder = other._decoder;
+        other._decoder = 0;
+        return *this;
+    }
 
-	operator FLIF_DECODER*() const
-	{
-		return _decoder;
-	}
+    operator FLIF_DECODER*() const
+    {
+        return _decoder;
+    }
 
 private:
-	flifDecoder(const flifDecoder& other)
-	{
-	}
+    flifDecoder(const flifDecoder& other)
+    {
+    }
 
-	flifDecoder& operator=(const flifDecoder& other)
-	{
-		return *this;
-	}
+    flifDecoder& operator=(const flifDecoder& other)
+    {
+        return *this;
+    }
 
-	FLIF_DECODER* _decoder;
+    FLIF_DECODER* _decoder;
 };
 
 class flifInfo
 {
 public:
-	flifInfo()
-		: _info(0)
-	{
-	}
+    flifInfo()
+        : _info(0)
+    {
+    }
 
-	flifInfo(FLIF_INFO* info)
-		: _info(info)
-	{
-	}
+    flifInfo(FLIF_INFO* info)
+        : _info(info)
+    {
+    }
 
-	~flifInfo()
-	{
-		if(_info != 0)
-			flif_destroy_info(_info);
-		_info = 0;
-	}
+    ~flifInfo()
+    {
+        if(_info != 0)
+            flif_destroy_info(_info);
+        _info = 0;
+    }
 
-	flifInfo(flifInfo&& other)
-	{
-		_info = other._info;
-		other._info = 0;
-	}
+    flifInfo(flifInfo&& other)
+    {
+        _info = other._info;
+        other._info = 0;
+    }
 
-	flifInfo& flifInfo::operator=(flifInfo&& other)
-	{
-		_info = other._info;
-		other._info = 0;
-		return *this;
-	}
+    flifInfo& flifInfo::operator=(flifInfo&& other)
+    {
+        _info = other._info;
+        other._info = 0;
+        return *this;
+    }
 
-	operator FLIF_INFO*() const
-	{
-		return _info;
-	}
+    operator FLIF_INFO*() const
+    {
+        return _info;
+    }
 
 private:
-	flifInfo(const flifInfo& other)
-	{
-	}
+    flifInfo(const flifInfo& other)
+    {
+    }
 
-	flifInfo& operator=(const flifInfo& other)
-	{
-		return *this;
-	}
+    flifInfo& operator=(const flifInfo& other)
+    {
+        return *this;
+    }
 
-	FLIF_INFO* _info;
+    FLIF_INFO* _info;
 };
 
 class flifMetaData
 {
 public:
-	flifMetaData()
-		: _image(0)
-		, _metadata(0)
-		, _length(0)
-	{}
+    flifMetaData()
+        : _image(0)
+        , _metadata(0)
+        , _length(0)
+    {}
 
-	flifMetaData(FLIF_IMAGE* image, const char* chunkname)
-		: _image(image)
-		, _metadata(0)
-		, _length(0)
-	{
-		flif_image_get_metadata(_image, chunkname, &_metadata, &_length);
-	}
+    flifMetaData(FLIF_IMAGE* image, const char* chunkname)
+        : _image(image)
+        , _metadata(0)
+        , _length(0)
+    {
+        flif_image_get_metadata(_image, chunkname, &_metadata, &_length);
+    }
 
-	~flifMetaData()
-	{
-		if(_metadata != 0)
-			flif_image_free_metadata(_image, _metadata);
-	}
+    ~flifMetaData()
+    {
+        if(_metadata != 0)
+            flif_image_free_metadata(_image, _metadata);
+    }
 
-	flifMetaData(flifMetaData&& other)
-	{
-		_image = other._image;
-		_metadata = other._metadata;
-		other._metadata = 0;
-		_length = other._length;
-	}
+    flifMetaData(flifMetaData&& other)
+    {
+        _image = other._image;
+        _metadata = other._metadata;
+        other._metadata = 0;
+        _length = other._length;
+    }
 
-	flifMetaData& operator=(flifMetaData&& other)
-	{
-		_image = other._image;
-		_metadata = other._metadata;
-		other._metadata = 0;
-		_length = other._length;
-		return *this;
-	}
+    flifMetaData& operator=(flifMetaData&& other)
+    {
+        _image = other._image;
+        _metadata = other._metadata;
+        other._metadata = 0;
+        _length = other._length;
+        return *this;
+    }
 
 private:
-	flifMetaData(const flifMetaData& other)
-	{
-	}
+    flifMetaData(const flifMetaData& other)
+    {
+    }
 
-	flifMetaData& operator=(const flifMetaData& other)
-	{
-		return *this;
-	}
+    flifMetaData& operator=(const flifMetaData& other)
+    {
+        return *this;
+    }
 
-	FLIF_IMAGE* _image;
-	unsigned char* _metadata;
-	size_t _length;
+    FLIF_IMAGE* _image;
+    unsigned char* _metadata;
+    size_t _length;
 };
 
 struct flifRGBA
 {
-	uint8_t r,g,b,a;
+    uint8_t r,g,b,a;
 };
