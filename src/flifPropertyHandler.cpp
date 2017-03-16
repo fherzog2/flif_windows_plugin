@@ -65,12 +65,10 @@ HRESULT STDMETHODCALLTYPE flifPropertyHandler::GetCount(DWORD *cProps)
 {
     CUSTOM_TRY
 
-        if (cProps == 0)
-            return E_INVALIDARG;
+        if(_prop_cache.get() == nullptr)
+            return E_ILLEGAL_METHOD_CALL;
 
-        *cProps = _countof(supported_flif_properties);
-
-        return S_OK;
+        return _prop_cache->GetCount(cProps);
 
     CUSTOM_CATCH_RETURN_HRESULT
 }
@@ -79,14 +77,10 @@ HRESULT STDMETHODCALLTYPE flifPropertyHandler::GetAt( DWORD iProp, PROPERTYKEY *
 {
     CUSTOM_TRY
 
-        if (pkey == 0)
-            return E_INVALIDARG;
+        if(_prop_cache.get() == nullptr)
+            return E_ILLEGAL_METHOD_CALL;
 
-        if (iProp >= _countof(supported_flif_properties))
-            return E_BOUNDS;
-
-        *pkey = supported_flif_properties[iProp];
-        return S_OK;
+        return _prop_cache->GetAt(iProp, pkey);
 
     CUSTOM_CATCH_RETURN_HRESULT
 }
@@ -95,38 +89,10 @@ HRESULT STDMETHODCALLTYPE flifPropertyHandler::GetValue(REFPROPERTYKEY key, PROP
 {
     CUSTOM_TRY
 
-        if (pv == 0)
-            return E_INVALIDARG;
+        if(_prop_cache.get() == nullptr)
+            return E_ILLEGAL_METHOD_CALL;
 
-        if (key == PKEY_Image_HorizontalSize)
-        {
-            pv->uintVal = _width;
-            pv->vt = VT_UI4;
-            return S_OK;
-        }
-        else if (key == PKEY_Image_VerticalSize)
-        {
-            pv->uintVal = _height;
-            pv->vt = VT_UI4;
-            return S_OK;
-        }
-        else if (key == PKEY_Image_Dimensions)
-        {
-            auto dimensions = to_wstring(_width) + L" x " + to_wstring(_height);
-
-            HRESULT init_result = InitPropVariantFromString(dimensions.data(), pv);
-
-            return FAILED(init_result) ? init_result : S_OK;
-        }
-        else if (key == PKEY_Image_BitDepth)
-        {
-            pv->uintVal = _bitdepth;
-            pv->vt = VT_UI4;
-            return S_OK;
-        }
-
-        pv->vt = VT_EMPTY;
-        return S_OK;
+        return _prop_cache->GetValue(key, pv);
 
     CUSTOM_CATCH_RETURN_HRESULT
 }
@@ -192,6 +158,10 @@ HRESULT STDMETHODCALLTYPE flifPropertyHandler::Initialize(IStream *stream, DWORD
         if(_is_initialized)
             return HRESULT_FROM_WIN32(ERROR_ALREADY_INITIALIZED);
 
+        HRESULT hr = PSCreateMemoryPropertyStore(IID_IPropertyStoreCache, (void**)_prop_cache.ptrptr());
+        if(FAILED(hr))
+            return hr;
+
         vector<BYTE> read_buffer;
         flifDecoder decoder;
         if(decoder == 0)
@@ -213,6 +183,39 @@ HRESULT STDMETHODCALLTYPE flifPropertyHandler::Initialize(IStream *stream, DWORD
             _width = flif_image_get_width(image);
             _height = flif_image_get_height(image);
             _bitdepth = flif_image_get_depth(image) * flif_image_get_nb_channels(image);
+
+            // fill prop cache
+
+            PROPVARIANT value;
+
+            HRESULT init_result = InitPropVariantFromInt32(_width, &value);
+            if(SUCCEEDED(init_result))
+            {
+                _prop_cache->SetValueAndState(PKEY_Image_HorizontalSize, &value, PSC_NORMAL);
+                PropVariantClear(&value);
+            }
+
+            init_result = InitPropVariantFromInt32(_height, &value);
+            if(SUCCEEDED(init_result))
+            {
+                _prop_cache->SetValueAndState(PKEY_Image_VerticalSize, &value, PSC_NORMAL);
+                PropVariantClear(&value);
+            }
+
+            init_result = InitPropVariantFromString((to_wstring(_width) + L" x " + to_wstring(_height)).data(), &value);
+            if(SUCCEEDED(init_result))
+            {
+                _prop_cache->SetValueAndState(PKEY_Image_Dimensions, &value, PSC_NORMAL);
+                PropVariantClear(&value);
+            }
+
+            init_result = InitPropVariantFromInt32(_bitdepth, &value);
+            if(SUCCEEDED(init_result))
+            {
+                _prop_cache->SetValueAndState(PKEY_Image_BitDepth, &value, PSC_NORMAL);
+                PropVariantClear(&value);
+            }
+
             break;
         }
 

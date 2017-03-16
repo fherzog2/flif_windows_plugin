@@ -55,4 +55,6 @@ private:
     uint32_t _width;
     uint32_t _height;
     uint8_t _bitdepth;
+
+    ComPtr<IPropertyStoreCache> _prop_cache;
 };
