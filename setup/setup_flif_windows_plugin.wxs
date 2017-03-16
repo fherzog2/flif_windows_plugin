@@ -157,5 +157,8 @@ limitations under the License.
 	<UIRef Id="WixUI_Minimal" />
     <WixVariable Id='WixUILicenseRtf' Value='license.rtf' />
 
+    <Icon Id="icon.ico" SourceFile="favicon.ico"/>
+    <Property Id="ARPPRODUCTICON" Value="icon.ico" />
+
   </Product>
 </Wix>
