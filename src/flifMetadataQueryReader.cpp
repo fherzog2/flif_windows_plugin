@@ -25,7 +25,7 @@ limitations under the License.
 */
 bool pushAPP1Header(const unsigned char* prefix, const size_t prefix_size, const unsigned char* chunk, const size_t chunk_size, vector<unsigned char>& output_buffer)
 {
-    bool prefix_must_be_added = prefix != nullptr &&
+    const bool prefix_must_be_added = prefix != nullptr &&
         prefix_size != 0 &&
         (chunk_size < prefix_size || memcmp(chunk, prefix, prefix_size) != 0);
 
@@ -33,7 +33,7 @@ bool pushAPP1Header(const unsigned char* prefix, const size_t prefix_size, const
     if(prefix_must_be_added)
         size_to_write += prefix_size;
 
-    // sizes bigger than 16 bytes are supported for APP1 headers
+    // sizes bigger than 16 bytes are unsupported for APP1 headers
     if(size_to_write > std::numeric_limits<uint16_t>::max())
         return false;
 

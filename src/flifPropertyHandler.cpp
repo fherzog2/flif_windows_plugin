@@ -263,15 +263,15 @@ HRESULT STDMETHODCALLTYPE flifPropertyHandler::Commit(void)
 */
 HRESULT readChunkAndTryDecoding(IStream *stream, size_t chunk_size, vector<BYTE>& buffer, flifDecoder& decoder)
 {
-    size_t previous_size = buffer.size();
+    const size_t previous_size = buffer.size();
     buffer.resize(buffer.size() + chunk_size);
 
     ULONG actually_read;
-    HRESULT read_result = stream->Read(buffer.data() + previous_size, static_cast<ULONG>(chunk_size), &actually_read);
+    const HRESULT read_result = stream->Read(buffer.data() + previous_size, static_cast<ULONG>(chunk_size), &actually_read);
     if(FAILED(read_result))
         return read_result;
 
-    bool end_of_stream = read_result == S_FALSE;
+    const bool end_of_stream = read_result == S_FALSE;
 
     buffer.resize(previous_size + actually_read);
 
