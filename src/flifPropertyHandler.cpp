@@ -306,7 +306,10 @@ HRESULT STDMETHODCALLTYPE flifPropertyHandler::Initialize(IStream *stream, DWORD
 
         while(true)
         {
-            HRESULT try_decode_result = readChunkAndTryDecoding(stream, 2048, read_buffer, decoder);
+            // read enough of the file to have a complete header (potentially with metadata)
+            // since there is no API to read just the header, multiple tries are necessary to be safe for all images
+
+            HRESULT try_decode_result = readChunkAndTryDecoding(stream, 20480, read_buffer, decoder);
             if(FAILED(try_decode_result))
                 return try_decode_result;
 
