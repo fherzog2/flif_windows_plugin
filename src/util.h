@@ -69,6 +69,28 @@ private:
 };
 
 /*!
+* RAII class for CoInitialize / CoUninitialize
+*/
+class ScopedCoInitialize
+{
+public:
+    ScopedCoInitialize()
+        : result(CoInitialize(0))
+    {}
+    ~ScopedCoInitialize()
+    {
+        if(SUCCEEDED(result))
+            CoUninitialize();
+    }
+
+    HRESULT result;
+
+private:
+    ScopedCoInitialize(const ScopedCoInitialize& other);
+    ScopedCoInitialize& operator=(const ScopedCoInitialize& other);
+};
+
+/*!
 * Smart pointer for COM interfaces.
 * Manages the necessary calls for IUnknown::AddRef and IUnknown::Release.
 *

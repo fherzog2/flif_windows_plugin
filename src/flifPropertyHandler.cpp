@@ -17,9 +17,146 @@ limitations under the License.
 #include "flifPropertyHandler.h"
 #include "plugin_guids.h"
 #include "flifWrapper.h"
+#include "flifMetadataQueryReader.h"
 
 #include <Propkey.h>
 #include <propvarutil.h>
+
+// only selected, predefined metadata entries are accessible through the property store
+
+PROPERTYKEY SUPPORTED_METADATA_PROPERTIES[] = {
+    PKEY_Photo_Aperture,
+    PKEY_Photo_Brightness,
+    PKEY_Photo_CameraManufacturer,
+    PKEY_Photo_CameraModel,
+    PKEY_Photo_CameraSerialNumber,
+    PKEY_Photo_Contrast,
+    PKEY_Photo_ContrastText,
+    PKEY_Photo_DateTaken,
+    PKEY_Photo_DigitalZoom,
+    PKEY_Photo_Event,
+    PKEY_Photo_EXIFVersion,
+    PKEY_Photo_ExposureBias,
+    PKEY_Photo_ExposureIndex,
+    PKEY_Photo_ExposureProgram,
+    PKEY_Photo_ExposureTime,
+    PKEY_Photo_Flash,
+    PKEY_Photo_FlashEnergy,
+    PKEY_Photo_FlashManufacturer,
+    PKEY_Photo_FlashModel,
+    PKEY_Photo_FlashText,
+    PKEY_Photo_FNumber,
+    PKEY_Photo_FocalLength,
+    PKEY_Photo_FocalLengthInFilm,
+    PKEY_Photo_FocalPlaneXResolution,
+    PKEY_Photo_FocalPlaneYResolution,
+    PKEY_Photo_GainControl,
+    PKEY_Photo_GainControlText,
+    PKEY_Photo_ISOSpeed,
+    PKEY_Photo_LensManufacturer,
+    PKEY_Photo_LensModel,
+    PKEY_Photo_LightSource,
+    PKEY_Photo_MakerNote,
+    PKEY_Photo_MakerNoteOffset,
+    PKEY_Photo_MaxAperture,
+    PKEY_Photo_MeteringMode,
+    PKEY_Photo_MeteringModeText,
+    PKEY_Photo_Orientation,
+    PKEY_Photo_OrientationText,
+    PKEY_Photo_PeopleNames,
+    PKEY_Photo_PhotometricInterpretation,
+    PKEY_Photo_PhotometricInterpretationText,
+    PKEY_Photo_ProgramMode,
+    PKEY_Photo_ProgramModeText,
+    PKEY_Photo_RelatedSoundFile,
+    PKEY_Photo_Saturation,
+    PKEY_Photo_SaturationText,
+    PKEY_Photo_Sharpness,
+    PKEY_Photo_SharpnessText,
+    PKEY_Photo_ShutterSpeed,
+    PKEY_Photo_SubjectDistance,
+    PKEY_Photo_TagViewAggregate,
+    PKEY_Photo_TranscodedForSync,
+    PKEY_Photo_WhiteBalance,
+    PKEY_Photo_WhiteBalanceText,
+
+    PKEY_Image_ImageID,
+    PKEY_Image_Dimensions,
+    PKEY_Image_HorizontalSize,
+    PKEY_Image_VerticalSize,
+    PKEY_Image_HorizontalResolution,
+    PKEY_Image_VerticalResolution,
+    PKEY_Image_BitDepth,
+    PKEY_Image_Compression,
+    PKEY_Image_ResolutionUnit,
+    PKEY_Image_ColorSpace,
+    PKEY_Image_CompressedBitsPerPixel,
+
+    PKEY_ApplicationName,
+    PKEY_Author,
+    PKEY_Comment,
+    PKEY_Copyright,
+    PKEY_DateAcquired,
+    PKEY_Keywords,
+    PKEY_Rating,
+    PKEY_Subject,
+    PKEY_Title,
+
+    PKEY_GPS_Altitude,
+    PKEY_GPS_Latitude,
+    PKEY_GPS_Longitude
+};
+
+//=============================================================================
+
+/*! RAII class for PSGetNameFromPropertyKey
+*/
+class NameFromPropertyKey
+{
+public:
+    NameFromPropertyKey(PROPERTYKEY key)
+        : name(nullptr)
+    {
+        result = PSGetNameFromPropertyKey(key, &name);
+    }
+
+    ~NameFromPropertyKey()
+    {
+        if(name != nullptr)
+            CoTaskMemFree(name);
+    }
+
+    HRESULT result;
+    WCHAR* name;
+
+private:
+    NameFromPropertyKey(const NameFromPropertyKey& other);
+    NameFromPropertyKey& operator=(const NameFromPropertyKey& other);
+};
+
+//=============================================================================
+
+/*!
+* RAII class for PROPVARIANT
+*/
+class ScopedPropVariant : public PROPVARIANT
+{
+public:
+    ScopedPropVariant()
+    {
+        PropVariantInit(this);
+    }
+    ~ScopedPropVariant()
+    {
+        PropVariantClear(this);
+    }
+
+private:
+    ScopedPropVariant(const ScopedPropVariant& other);
+    ScopedPropVariant& operator=(const ScopedPropVariant& other);
+};
+
+//=============================================================================
 
 flifPropertyHandler::flifPropertyHandler()
 : _is_initialized(false)
@@ -186,34 +323,45 @@ HRESULT STDMETHODCALLTYPE flifPropertyHandler::Initialize(IStream *stream, DWORD
 
             // fill prop cache
 
-            PROPVARIANT value;
-
-            HRESULT init_result = InitPropVariantFromInt32(_width, &value);
+            ScopedPropVariant prop_width;
+            HRESULT init_result = InitPropVariantFromInt32(_width, &prop_width);
             if(SUCCEEDED(init_result))
-            {
-                _prop_cache->SetValueAndState(PKEY_Image_HorizontalSize, &value, PSC_NORMAL);
-                PropVariantClear(&value);
-            }
+                _prop_cache->SetValueAndState(PKEY_Image_HorizontalSize, &prop_width, PSC_NORMAL);
 
-            init_result = InitPropVariantFromInt32(_height, &value);
+            ScopedPropVariant prop_height;
+            init_result = InitPropVariantFromInt32(_height, &prop_height);
             if(SUCCEEDED(init_result))
-            {
-                _prop_cache->SetValueAndState(PKEY_Image_VerticalSize, &value, PSC_NORMAL);
-                PropVariantClear(&value);
-            }
+                _prop_cache->SetValueAndState(PKEY_Image_VerticalSize, &prop_height, PSC_NORMAL);
 
-            init_result = InitPropVariantFromString((to_wstring(_width) + L" x " + to_wstring(_height)).data(), &value);
+            ScopedPropVariant prop_dimensions;
+            init_result = InitPropVariantFromString((to_wstring(_width) + L" x " + to_wstring(_height)).data(), &prop_dimensions);
             if(SUCCEEDED(init_result))
-            {
-                _prop_cache->SetValueAndState(PKEY_Image_Dimensions, &value, PSC_NORMAL);
-                PropVariantClear(&value);
-            }
+                _prop_cache->SetValueAndState(PKEY_Image_Dimensions, &prop_dimensions, PSC_NORMAL);
 
-            init_result = InitPropVariantFromInt32(_bitdepth, &value);
+            ScopedPropVariant prop_bitdepth;
+            init_result = InitPropVariantFromInt32(_bitdepth, &prop_bitdepth);
             if(SUCCEEDED(init_result))
+                _prop_cache->SetValueAndState(PKEY_Image_BitDepth, &prop_bitdepth, PSC_NORMAL);
+
+            ScopedCoInitialize coinit;
+
+            ComPtr<IWICMetadataQueryReader> query_reader;
+            hr = createMetadataQueryReaderFromFLIF(image, query_reader);
+            if(SUCCEEDED(hr))
             {
-                _prop_cache->SetValueAndState(PKEY_Image_BitDepth, &value, PSC_NORMAL);
-                PropVariantClear(&value);
+                for(const auto& prop : SUPPORTED_METADATA_PROPERTIES)
+                {
+                    NameFromPropertyKey canonical_name(prop);
+
+                    if(SUCCEEDED(canonical_name.result))
+                    {
+                        ScopedPropVariant value;
+                        hr = query_reader->GetMetadataByName(canonical_name.name, &value);
+
+                        if(SUCCEEDED(hr) && value.vt != VT_EMPTY)
+                            _prop_cache->SetValueAndState(prop, &value, PSC_NORMAL);
+                    }
+                }
             }
 
             break;

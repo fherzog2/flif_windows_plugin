@@ -29,6 +29,7 @@ endif()
 
 set(SRC_FILES src/flifBitmapDecoder.cpp
               src/flifPropertyHandler.cpp
+              src/flifMetadataQueryReader.cpp
               src/dll_interface.cpp
               src/RegistryManager.cpp
               src/flif_windows_plugin.rc

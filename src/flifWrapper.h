@@ -158,6 +158,16 @@ public:
         return *this;
     }
 
+    const unsigned char* data() const
+    {
+        return _metadata;
+    }
+
+    size_t size() const
+    {
+        return _length;
+    }
+
 private:
     flifMetaData(const flifMetaData& other)
     {
