@@ -148,7 +148,7 @@ HRESULT createMetadataQueryReaderFromFLIF(FLIF_IMAGE* image, ComPtr<IWICMetadata
     // EXIF header
     if(exif.data() != nullptr)
     {
-        pushAPP1Header(exif.data(), exif.size(), 0, 0, dummy_jpg);
+        pushAPP1Header(0, 0, exif.data(), exif.size(), dummy_jpg);
     }
     // XMP header
     if(xmp.data() != nullptr)

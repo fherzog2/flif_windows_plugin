@@ -55,14 +55,8 @@ public:
     }
 
 private:
-    flifDecoder(const flifDecoder& other)
-    {
-    }
-
-    flifDecoder& operator=(const flifDecoder& other)
-    {
-        return *this;
-    }
+    flifDecoder(const flifDecoder& other);
+    flifDecoder& operator=(const flifDecoder& other);
 
     FLIF_DECODER* _decoder;
 };
@@ -106,14 +100,8 @@ public:
     }
 
 private:
-    flifInfo(const flifInfo& other)
-    {
-    }
-
-    flifInfo& operator=(const flifInfo& other)
-    {
-        return *this;
-    }
+    flifInfo(const flifInfo& other);
+    flifInfo& operator=(const flifInfo& other);
 
     FLIF_INFO* _info;
 };
@@ -169,14 +157,8 @@ public:
     }
 
 private:
-    flifMetaData(const flifMetaData& other)
-    {
-    }
-
-    flifMetaData& operator=(const flifMetaData& other)
-    {
-        return *this;
-    }
+    flifMetaData(const flifMetaData& other);
+    flifMetaData& operator=(const flifMetaData& other);
 
     FLIF_IMAGE* _image;
     unsigned char* _metadata;

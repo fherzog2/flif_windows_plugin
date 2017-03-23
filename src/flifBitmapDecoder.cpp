@@ -18,6 +18,8 @@ limitations under the License.
 #include "plugin_guids.h"
 
 flifBitmapFrameDecode::flifBitmapFrameDecode()
+: _width(0)
+, _height(0)
 {
     DllAddRef();
 }

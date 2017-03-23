@@ -44,7 +44,7 @@ public:
     class ErrorRecord
     {
     public:
-        ErrorRecord(const Key& key, wstring value_name, LONG error, wstring context);
+        ErrorRecord(const Key& key, const wstring& value_name, LONG error, const wstring& context);
 
         Key _key;
         wstring _value_name;

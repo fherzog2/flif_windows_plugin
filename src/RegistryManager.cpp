@@ -28,7 +28,7 @@ inline wstring formatRegErrorCode(LONG error)
 
 //=============================================================================
 
-RegistryManager::ErrorRecord::ErrorRecord(const Key& key, wstring value_name, LONG error, wstring context)
+RegistryManager::ErrorRecord::ErrorRecord(const Key& key, const wstring& value_name, LONG error, const wstring& context)
     : _key(key)
     , _value_name(value_name)
     , _error_code(HRESULT_FROM_WIN32(error))

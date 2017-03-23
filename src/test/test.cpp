@@ -283,7 +283,7 @@ int test_file(const string& filename, IClassFactory* class_factory_decoder, ICla
             bool printed = false;
 
             UINT value_uint;
-            if(!printed && SUCCEEDED(PropVariantToUInt32(var, &value_uint)))
+            if(SUCCEEDED(PropVariantToUInt32(var, &value_uint)))
             {
                 wprintf(L"    %s\t%d\n", key_string, value_uint);
                 printed = true;
