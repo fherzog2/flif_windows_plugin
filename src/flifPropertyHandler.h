@@ -25,7 +25,7 @@ class flifPropertyHandler : public IInitializeWithStream, public IPropertyStore
 {
 public:
     flifPropertyHandler();
-    ~flifPropertyHandler();
+    virtual ~flifPropertyHandler();
 
     // IUnknown methods
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** ppvObject) override;

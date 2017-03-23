@@ -139,8 +139,6 @@ HRESULT STDMETHODCALLTYPE flifBitmapFrameDecode::CopyPixels(const WICRect* rect_
         if(cbBufferSize / cbStride < copy_height)
             return WINCODEC_ERR_INSUFFICIENTBUFFER;
 
-        UINT stride = _width * bytesPerPixel;
-
         // all parameters are ok, copy without further checks
         for(UINT y = 0; y < copy_height; ++y)
         {

@@ -191,13 +191,6 @@ STDMETHODIMP flifPropertyHandler::QueryInterface(REFIID iid, void** ppvObject)
     return S_OK;
 }
 
-const PROPERTYKEY supported_flif_properties[] = {
-    PKEY_Image_HorizontalSize,
-    PKEY_Image_VerticalSize,
-    PKEY_Image_Dimensions,
-    PKEY_Image_BitDepth
-};
-
 HRESULT STDMETHODCALLTYPE flifPropertyHandler::GetCount(DWORD *cProps)
 {
     CUSTOM_TRY

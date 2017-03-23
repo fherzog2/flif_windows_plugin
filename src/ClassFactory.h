@@ -32,7 +32,7 @@ public:
         DllAddRef();
     }
 
-    ~ClassFactory()
+    virtual ~ClassFactory()
     {
         DllRelease();
     }

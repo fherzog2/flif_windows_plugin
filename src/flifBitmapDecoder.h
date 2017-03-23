@@ -26,7 +26,7 @@ class flifBitmapFrameDecode : public IWICBitmapFrameDecode
 {
 public:
     flifBitmapFrameDecode();
-    ~flifBitmapFrameDecode();
+    virtual ~flifBitmapFrameDecode();
 
     // IUnknown methods
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** ppvObject) override;
@@ -63,7 +63,7 @@ class flifBitmapDecoder : public IWICBitmapDecoder
 {
 public:
     flifBitmapDecoder();
-    ~flifBitmapDecoder();
+    virtual ~flifBitmapDecoder();
 
     // IUnknown methods
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** ppvObject) override;

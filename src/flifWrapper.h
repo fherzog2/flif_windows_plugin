@@ -87,7 +87,7 @@ public:
         other._info = 0;
     }
 
-    flifInfo& flifInfo::operator=(flifInfo&& other)
+    flifInfo& operator=(flifInfo&& other)
     {
         _info = other._info;
         other._info = 0;
