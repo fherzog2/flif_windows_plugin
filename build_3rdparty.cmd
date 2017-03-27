@@ -13,9 +13,9 @@ set lpngurl=https://github.com/glennrp/libpng/archive/v1.6.28.zip
 set lpngzip=v1.6.28.zip
 set lpngdir=libpng-1.6.28
 
-set flifurl=https://github.com/FLIF-hub/FLIF/archive/6bdc5ab35f8b295e0584a99fd60b6f7a6d395c56.zip
-set flifzip=FLIF-6bdc5ab35f8b295e0584a99fd60b6f7a6d395c56.zip
-set flifdir=FLIF-6bdc5ab35f8b295e0584a99fd60b6f7a6d395c56
+set flifurl=https://github.com/FLIF-hub/FLIF/archive/fe2c1558a7245d9efaafd082f6237e9e06b72e2d.zip
+set flifzip=FLIF-fe2c1558a7245d9efaafd082f6237e9e06b72e2d.zip
+set flifdir=FLIF-fe2c1558a7245d9efaafd082f6237e9e06b72e2d
 
 set BUILD_CFG=Release
 
