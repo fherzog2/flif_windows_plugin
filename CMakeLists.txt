@@ -41,9 +41,9 @@ include_directories(flif_windows_plugin ${FLIF_INCLUDE_DIR})
 
 # test
 
-add_executable(test1 src/test/test.cpp)
+add_executable(test1 test/test.cpp)
 target_link_libraries(test1 flif_windows_plugin Shlwapi)
 target_include_directories(test1 PRIVATE "3rdparty/bin" "src")
 
 enable_testing()
-add_test(NAME test1 COMMAND test1 ${CMAKE_SOURCE_DIR}/src/test/flif.flif)
+add_test(NAME test1 COMMAND test1 ${CMAKE_SOURCE_DIR}/test/flif.flif)
