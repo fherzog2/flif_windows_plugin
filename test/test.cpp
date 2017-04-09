@@ -16,12 +16,16 @@ limitations under the License.
 
 #define INITGUID
 
-#include <wincodec.h>
-#include <Shlwapi.h>
+// windows headers
 #include <Propsys.h>
 #include <propvarutil.h>
-#include <fstream>
+#include <Shlwapi.h>
+#include <wincodec.h>
 
+// std headers
+#include <codecvt>
+#include <fstream>
+#include <memory>
 #include <vector>
 
 #include "util.h"
@@ -30,12 +34,178 @@ limitations under the License.
 #include "flifWrapper.h"
 #include <comdef.h>
 
+class TestContext
+{
+public:
+    struct Token
+    {
+        Token()
+        {}
+        Token(const wstring& pkey, const wstring& pvalue)
+            : key(pkey), value(pvalue)
+        {}
+
+        bool operator==(const Token& other) const
+        {
+            return key == other.key && value == other.value;
+        }
+        bool operator!=(const Token& other) const
+        {
+            return !(*this == other);
+        }
+
+        wstring key;
+        wstring value;
+    };
+
+    static wstring string_to_wstring_utf8(const string& str);
+    static string string_from_wstring_utf8(const wstring& str);
+
+    void write(const wstring& key, const wstring& value);
+    const vector<Token>& getTokens() const;
+
+    bool initFromFile(const string& filename);
+    bool writeFile(const string& filename) const;
+
+private:
+    static wstring string_replace(const wstring& base_str, const wstring& old_part, const wstring& new_part);
+
+    vector<Token> _tokens;
+};
+
+void TestContext::write(const wstring& key, const wstring& value)
+{
+    _tokens.push_back(Token(key, value));
+}
+
+const vector<TestContext::Token>& TestContext::getTokens() const
+{
+    return _tokens;
+}
+
+wstring TestContext::string_to_wstring_utf8(const string& str)
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> utf8_converter;
+    return utf8_converter.from_bytes(str);
+}
+
+string TestContext::string_from_wstring_utf8(const wstring& str)
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> utf8_converter;
+    return utf8_converter.to_bytes(str);
+}
+
+wstring TestContext::string_replace(const wstring& base_str, const wstring& old_part, const wstring& new_part)
+{
+    wstring result = base_str;
+
+    auto pos = result.find(old_part);
+    while (pos != wstring::npos)
+    {
+        result.replace(pos, old_part.size(), new_part);
+        pos = result.find(old_part);
+    }
+
+    return result;
+}
+
+bool TestContext::initFromFile(const string& filename)
+{
+    _tokens.clear();
+
+    fstream file(filename, fstream::in);
+    if(!file)
+        return false;
+
+    auto token_reader = [&](){
+        string line;
+        getline(file, line);
+
+        auto pos = line.find("=");
+        if(pos == string::npos)
+            return unique_ptr<Token>(nullptr);
+
+        string key = line.substr(0, pos);
+        string value = line.substr(pos+1);
+        return unique_ptr<Token>(new Token(
+            string_to_wstring_utf8(key),
+            string_replace(string_to_wstring_utf8(value), L"\\n", L"\n")));
+    };
+
+    auto tokens_size_token = token_reader();
+    if(tokens_size_token == nullptr)
+        return false;
+    if(!file)
+        return false;
+
+    size_t tokens_size = stoul(tokens_size_token->value);
+
+    // read until EOF or error
+    while(true)
+    {
+        auto t = token_reader();
+        if(t == nullptr)
+            break;
+        if(!file)
+            break;
+
+        _tokens.push_back(*t);
+    }
+
+    if(_tokens.size() != tokens_size)
+        return false;
+
+    return true;
+}
+
+bool TestContext::writeFile(const string& filename) const
+{
+    // write each token as text line: key=value\n
+    // newlines in value are encoded as '\'+'n'
+
+    fstream file(filename, fstream::out|fstream::trunc);
+    if(!file)
+        return false;
+
+    auto token_writer = [&](const Token& t){
+        file
+            << string_from_wstring_utf8(t.key)
+            << "="
+            << string_from_wstring_utf8(string_replace(t.value, L"\n", L"\\n"))
+            << "\n";
+    };
+
+    token_writer(Token(L"tokens.size", to_wstring(_tokens.size())));
+    if(!file)
+        return false;
+
+    for(const auto& t : _tokens)
+    {
+        token_writer(t);
+        if(!file)
+            return false;
+    }
+    return true;
+}
+
 typedef HRESULT (STDAPICALLTYPE *fpDllGetClassObject)(REFCLSID, REFIID, LPVOID);
 
 inline string formatHRESULT(HRESULT hr)
 {
     _com_error e(hr);
     return e.ErrorMessage();
+}
+
+string getBaseNameFromPath(string path)
+{
+    auto path_end = path.rfind("/");
+    if(path_end != string::npos)
+        path.replace(0, path_end + 1, "");
+    path_end = path.rfind("\\");
+    if(path_end != string::npos)
+        path.replace(0, path_end + 1, "");
+
+    return path;
 }
 
 vector<BYTE> read_file(const string& filename)
@@ -133,7 +303,7 @@ HRESULT save_bitmapframe(IWICBitmapFrameDecode* frame, const string& filename)
     if(FAILED(hr))
         return hr;
 
-    WICRect full_rect = { 0, 0, width, height };
+    WICRect full_rect = { 0, 0, static_cast<INT>(width), static_cast<INT>(height) };
     vector<BYTE> rgba_bytes;
     rgba_bytes.resize(width * height * 4);
     hr = frame->CopyPixels(&full_rect, width * 4, static_cast<UINT>(rgba_bytes.size()), rgba_bytes.data());
@@ -181,7 +351,7 @@ HRESULT save_bitmapframe(IWICBitmapFrameDecode* frame, const string& filename)
     return S_OK;
 }
 
-int test_file(const string& filename, IClassFactory* class_factory_decoder, IClassFactory* class_factory_props)
+int test_file(const string& filename, TestContext& test_context, IClassFactory* class_factory_decoder, IClassFactory* class_factory_props)
 {
     HRESULT hr = S_OK;
 
@@ -212,7 +382,7 @@ int test_file(const string& filename, IClassFactory* class_factory_decoder, ICla
         HR_ASSERT(hr)
 
         {
-            WICRect line_rect = { 0, 0, w, 1 };
+            WICRect line_rect = { 0, 0, static_cast<INT>(w), 1 };
             vector<BYTE> line;
             line.resize(w * 4);
             hr = frame->CopyPixels(&line_rect, w * 4, static_cast<UINT>(line.size()), line.data());
@@ -220,7 +390,7 @@ int test_file(const string& filename, IClassFactory* class_factory_decoder, ICla
         }
 
         {
-            WICRect full_rect = { 0, 0, w, h };
+            WICRect full_rect = { 0, 0, static_cast<INT>(w), static_cast<INT>(h) };
             vector<BYTE> full;
             full.resize(w * h * 4);
             hr = frame->CopyPixels(&full_rect, w * 4, static_cast<UINT>(full.size()), full.data());
@@ -231,9 +401,7 @@ int test_file(const string& filename, IClassFactory* class_factory_decoder, ICla
 
         string decoded_filename = filename;
         decoded_filename.replace(decoded_filename.rfind(".flif"), 5, " (decoded).bmp");
-        auto path_end = decoded_filename.rfind("/");
-        if(path_end != string::npos)
-            decoded_filename.replace(0, path_end + 1, "");
+        decoded_filename = getBaseNameFromPath(decoded_filename);
 
         hr = save_bitmapframe(frame.get(), decoded_filename);
         HR_ASSERT(hr)
@@ -262,6 +430,7 @@ int test_file(const string& filename, IClassFactory* class_factory_decoder, ICla
         MY_ASSERT(count == 0, "No attributes");
 
         debug_out("Printing metadata");
+        test_context.write(L"filename", test_context.string_to_wstring_utf8(getBaseNameFromPath(filename)));
 
         CoInitialize(0);
 
@@ -282,23 +451,20 @@ int test_file(const string& filename, IClassFactory* class_factory_decoder, ICla
 
             bool printed = false;
 
-            UINT value_uint;
-            if(SUCCEEDED(PropVariantToUInt32(var, &value_uint)))
-            {
-                wprintf(L"    %s\t%d\n", key_string, value_uint);
-                printed = true;
-            }
-
             const UINT VALUE_STRING_SIZE = 1024;
             WCHAR value_string[VALUE_STRING_SIZE];
             if(!printed && SUCCEEDED(PropVariantToString(var, value_string, VALUE_STRING_SIZE)))
             {
                 wprintf(L"    %s\t%s\n", key_string, value_string);
+                test_context.write(key_string, value_string);
                 printed = true;
             }
 
             if(!printed)
+            {
                 wprintf(L"    %s\tUnsupported datatype, update this printing code\n", key_string);
+                test_context.write(key_string, L"[value to string failed]");
+            }
 
             CoTaskMemFree(key_string);
         }
@@ -311,10 +477,38 @@ int test_file(const string& filename, IClassFactory* class_factory_decoder, ICla
 
 int main(int argc, char** args)
 {
-    if(argc <= 1)
+    /*
+    * Usage: test -i regression.txt test1.flif test2.flif [...]
+    */
+
+    bool parse_options = true;
+    string regression_file_in;
+
+    vector<string> flif_files;
+
+    for (int i = 1; i < argc; ++i)
     {
-        debug_out("missing argument");
-        return 1;
+        string arg = args[i];
+
+        if(parse_options)
+        {
+            if(arg == "-i")
+            {
+                if(i+1 >= argc)
+                {
+                    debug_out("missing argument");
+                    return 1;
+                }
+                regression_file_in = args[i+1];
+                i++;
+                continue;
+            }
+
+            // no option recognized, the remaining args are treated as filenames
+            parse_options = false;
+        }
+
+        flif_files.push_back(args[i]);
     }
 
     auto plugin = LoadLibraryW(L"flif_windows_plugin.dll");
@@ -329,10 +523,13 @@ int main(int argc, char** args)
     hr = get_class_object(CLSID_flifPropertyHandler, IID_IClassFactory, class_factory_props.ptrptr());
     HR_ASSERT(hr)
 
+    TestContext test_context;
+
     // test premade file
 
-    if(test_file(args[1], class_factory_decoder.get(), class_factory_props.get()) != 0)
-        return 1;
+    for(const auto& file : flif_files)
+        if(test_file(file, test_context, class_factory_decoder.get(), class_factory_props.get()) != 0)
+            return 1;
 
     // create fresh file
 
@@ -362,12 +559,34 @@ int main(int argc, char** args)
 
     flif_encoder_add_image(encoder, image);
 
-    MY_ASSERT(flif_encoder_encode_file(encoder, "test.flif") != 1, "flif_encoder_encode_file failed")
+    const char* code_generated_flif = "test.flif";
+
+    MY_ASSERT(flif_encoder_encode_file(encoder, code_generated_flif) != 1, "flif_encoder_encode_file failed")
 
     // test with fresh file
 
-    if(test_file("test.flif", class_factory_decoder.get(), class_factory_props.get()) != 0)
+    if(test_file(code_generated_flif, test_context, class_factory_decoder.get(), class_factory_props.get()) != 0)
         return 1;
+
+    if(!regression_file_in.empty())
+    {
+        // write the actual test data to the build dir so it can be viewed in case something goes wrong
+        // it can also be copied to the source dir if the regression data has to be changed
+        MY_ASSERT(!test_context.writeFile(getBaseNameFromPath(regression_file_in)), "creating regression file failed");
+
+        TestContext regression_data;
+        MY_ASSERT(!regression_data.initFromFile(regression_file_in), "loading regression file failed");
+
+        MY_ASSERT(regression_data.getTokens().size() != test_context.getTokens().size(), "regression error: different number of tokens");
+
+        for(size_t i = 0; i < regression_data.getTokens().size(); ++i)
+        {
+            MY_ASSERT(regression_data.getTokens()[i] != test_context.getTokens()[i], \
+                string("regression error: line ") + to_string(i+2) + ": " + \
+                TestContext::string_from_wstring_utf8(regression_data.getTokens()[i].key + L"=" + regression_data.getTokens()[i].value) + " <-> " + \
+                TestContext::string_from_wstring_utf8(test_context.getTokens()[i].key + L"=" + test_context.getTokens()[i].value));
+        }
+    }
 
     return 0;
 }

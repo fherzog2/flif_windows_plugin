@@ -1,2 +1,5 @@
 3rdparty
 build
+setup/setup_flif_windows_plugin.wixobj
+setup/setup_flif_windows_plugin.wixpdb
+setup/setup_flif_windows_plugin.msi

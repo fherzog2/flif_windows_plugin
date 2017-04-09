@@ -1,0 +1,11 @@
+tokens.size=10
+filename=flif.flif
+System.Image.VerticalSize=304
+System.Image.HorizontalSize=352
+System.Image.Dimensions=352 x 304
+System.Image.BitDepth=32
+filename=test.flif
+System.Image.VerticalSize=256
+System.Image.HorizontalSize=256
+System.Image.Dimensions=256 x 256
+System.Image.BitDepth=32
