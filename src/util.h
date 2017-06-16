@@ -201,6 +201,7 @@ public:
     int releaseRef(T* com_object)
     {
         ULONG count = InterlockedDecrement(&_rc);
+
         if(0 == count)
             delete com_object;
         return count;
@@ -212,4 +213,5 @@ private:
 void DllAddRef();
 void DllRelease();
 wstring getThisLibraryPath();
+HINSTANCE getInstanceHandle();
 wstring to_wstring(const GUID& guid);

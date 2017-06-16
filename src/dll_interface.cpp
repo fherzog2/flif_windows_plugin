@@ -23,6 +23,7 @@ limitations under the License.
 #include "plugin_guids.h"
 #include "flifBitmapDecoder.h"
 #include "flifPropertyHandler.h"
+#include "flifPreviewHandler.h"
 #include "ClassFactory.h"
 
 /*!
@@ -68,6 +69,11 @@ wstring getThisLibraryPath()
     throw bad_alloc();
 }
 
+HINSTANCE getInstanceHandle()
+{
+    return g_module_handle;
+}
+
 wstring to_wstring(const GUID& guid)
 {
     OLECHAR buffer[256];
@@ -93,6 +99,7 @@ STDAPI DllRegisterServer()
         RegistryManager reg;
         flifBitmapDecoder::registerClass(reg);
         flifPropertyHandler::registerClass(reg);
+        flifPreviewHandler::registerClass(reg);
 
         if(!reg.getErrors().empty())
         {
@@ -114,6 +121,7 @@ STDAPI DllUnregisterServer()
         RegistryManager reg;
         flifBitmapDecoder::unregisterClass(reg);
         flifPropertyHandler::unregisterClass(reg);
+        flifPreviewHandler::unregisterClass(reg);
 
         if(!reg.getErrors().empty())
         {
@@ -141,6 +149,11 @@ STDAPI DllGetClassObject(REFCLSID clsid, REFIID iid, LPVOID *ppv)
         if(IsEqualGUID(clsid, CLSID_flifPropertyHandler))
         {
             ComPtr<ClassFactory<flifPropertyHandler>> cf(new ClassFactory<flifPropertyHandler>());
+            return cf->QueryInterface(iid, ppv);
+        }
+        if (IsEqualGUID(clsid, CLSID_flifPreviewHandler))
+        {
+            ComPtr<ClassFactory<flifPreviewHandler>> cf(new ClassFactory<flifPreviewHandler>());
             return cf->QueryInterface(iid, ppv);
         }
 
