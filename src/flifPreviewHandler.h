@@ -44,14 +44,62 @@ public:
     // IInitializeWithStream methods
     virtual HRESULT STDMETHODCALLTYPE Initialize(IStream *pstream, DWORD grfMode) override;
 
+    void togglePlayState();
+    void showNextFrame();
+
     static void registerClass(RegistryManager& reg);
     static void unregisterClass(RegistryManager& reg);
 private:
+    void updateLayout();
+
     ComRefCountImpl _ref_count;
 
     HWND _parent_window;
     RECT _parent_window_rect;
 
+    ComPtr<IStream> _stream;
+
     ATOM _registered_class;
     HWND _preview_window;
+
+    HWND _image_window;
+    HWND _play_button;
+    bool _playing;
+
+    class DibSection
+    {
+    public:
+        DibSection(HBITMAP dib_section = 0)
+            : _dib_section(dib_section)
+        {
+        }
+
+        ~DibSection()
+        {
+            if (_dib_section)
+                DeleteObject(_dib_section);
+        }
+
+        DibSection(const DibSection& other) = delete;
+        DibSection& operator=(const DibSection& other) = delete;
+
+        DibSection(DibSection&& other)
+            : _dib_section(other._dib_section)
+        {
+            other._dib_section = 0;
+        }
+
+        DibSection& operator=(DibSection&& other)
+        {
+            _dib_section = other._dib_section;
+            other._dib_section = 0;
+        }
+
+        HBITMAP _dib_section;
+    };
+
+    int _frame_width;
+    int _frame_height;
+    vector<DibSection> _frame_bitmaps;
+    size_t _current_frame;
 };
