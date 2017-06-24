@@ -120,6 +120,9 @@ LRESULT CALLBACK WND_PROC_FLIF_PREVIEW_HANDLER(HWND hWnd, UINT message, WPARAM w
             handler->showFrameFromScrollBar(scroll_pos);
         }
         break;
+    case WM_CTLCOLORSTATIC:
+        // no background color to avoid flickering during animation
+        return reinterpret_cast<LRESULT>(GetStockObject(NULL_BRUSH));
     }
 
     return DefWindowProcW(hWnd, message, wParam, lParam);
