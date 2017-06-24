@@ -21,6 +21,38 @@ limitations under the License.
 #include "util.h"
 #include "RegistryManager.h"
 
+class DibSection
+{
+public:
+    DibSection(HBITMAP dib_section = 0)
+        : _dib_section(dib_section)
+    {
+    }
+
+    ~DibSection()
+    {
+        if (_dib_section)
+            DeleteObject(_dib_section);
+    }
+
+    DibSection(const DibSection& other) = delete;
+    DibSection& operator=(const DibSection& other) = delete;
+
+    DibSection(DibSection&& other)
+        : _dib_section(other._dib_section)
+    {
+        other._dib_section = 0;
+    }
+
+    DibSection& operator=(DibSection&& other)
+    {
+        _dib_section = other._dib_section;
+        other._dib_section = 0;
+    }
+
+    HBITMAP _dib_section;
+};
+
 class flifPreviewHandler : public IPreviewHandler, public IInitializeWithStream
 {
 public:
@@ -50,6 +82,7 @@ public:
     static void registerClass(RegistryManager& reg);
     static void unregisterClass(RegistryManager& reg);
 private:
+    void destroyPreviewWindowData();
     void updateLayout();
 
     ComRefCountImpl _ref_count;
@@ -59,47 +92,38 @@ private:
 
     ComPtr<IStream> _stream;
 
+    // PREVIEW WINDOW DATA: only valid between DoPreview() and Unload()
     ATOM _registered_class;
     HWND _preview_window;
-
-    HWND _image_window;
-    HWND _play_button;
+    HWND _image_window; // owned by _preview_window
+    HWND _play_button;  // owned by _preview_window
     bool _playing;
-
-    class DibSection
-    {
-    public:
-        DibSection(HBITMAP dib_section = 0)
-            : _dib_section(dib_section)
-        {
-        }
-
-        ~DibSection()
-        {
-            if (_dib_section)
-                DeleteObject(_dib_section);
-        }
-
-        DibSection(const DibSection& other) = delete;
-        DibSection& operator=(const DibSection& other) = delete;
-
-        DibSection(DibSection&& other)
-            : _dib_section(other._dib_section)
-        {
-            other._dib_section = 0;
-        }
-
-        DibSection& operator=(DibSection&& other)
-        {
-            _dib_section = other._dib_section;
-            other._dib_section = 0;
-        }
-
-        HBITMAP _dib_section;
-    };
 
     int _frame_width;
     int _frame_height;
     vector<DibSection> _frame_bitmaps;
     size_t _current_frame;
+    // PREVIEW WINDOW DATA END
+
+    /**
+    * Cleanup helper used during DoPreview()
+    */
+    class PreviewWindowDataDeleter
+    {
+    public:
+        PreviewWindowDataDeleter(flifPreviewHandler& parent)
+            : _parent(parent)
+            , should_delete(true)
+        {
+        }
+
+        ~PreviewWindowDataDeleter()
+        {
+            if (should_delete)
+                _parent.destroyPreviewWindowData();
+        }
+
+        flifPreviewHandler& _parent;
+        bool should_delete;
+    };
 };

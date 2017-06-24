@@ -62,7 +62,31 @@ flifPreviewHandler::flifPreviewHandler()
 
 flifPreviewHandler::~flifPreviewHandler()
 {
+    destroyPreviewWindowData();
     DllRelease();
+}
+
+void flifPreviewHandler::destroyPreviewWindowData()
+{
+    if (_preview_window)
+    {
+        DestroyWindow(_preview_window);
+        _preview_window = 0;
+        _image_window = 0;
+        _play_button = 0;
+    }
+
+    if (_registered_class)
+    {
+        UnregisterClassW(PREVIEW_WINDOW_CLASSNAME, getInstanceHandle());
+        _registered_class = 0;
+    }
+
+    _playing = false;
+    _frame_width = 0;
+    _frame_height = 0;
+    _frame_bitmaps.clear();
+    _current_frame = 0;
 }
 
 STDMETHODIMP flifPreviewHandler::QueryInterface(REFIID iid, void** ppvObject)
@@ -187,6 +211,12 @@ HBITMAP createDibSectionFromFlifImage(FLIF_IMAGE* image)
 
 HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
 {
+    if (_preview_window)
+        return E_FAIL; // called twice
+
+    // deletes the incomplete preview window data if anything fails in this function (also in case of exceptions)
+    PreviewWindowDataDeleter deleter(*this);
+
     vector<BYTE> bytes;
     HRESULT hr = flifBitmapDecoder::streamReadAll(_stream.get(), bytes);
     if (FAILED(hr))
@@ -211,9 +241,6 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
         HBITMAP bitmap = createDibSectionFromFlifImage(image);
         _frame_bitmaps.push_back(bitmap);
     }
-
-    // not needed anymore
-    _stream.reset(0);
 
     WNDCLASSEXW wcex;
 
@@ -306,31 +333,23 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
 
     ShowWindow(_preview_window, SW_SHOW);
 
+    // everything successful, disarm deleter
+    deleter.should_delete = false;
+
+    // not needed anymore
+    _stream.reset(0);
+
     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE flifPreviewHandler::Unload()
 {
-    if (_preview_window)
-    {
-        DestroyWindow(_preview_window);
-        _preview_window = 0;
-        _image_window = 0;
-        _play_button = 0;
-    }
+    destroyPreviewWindowData();
 
-    _playing = false;
+    // throw away initialization parameters, too
+    _parent_window = 0;
+    _parent_window_rect = { 0, 0, 0, 0 };
     _stream.reset(0);
-    _frame_width = 0;
-    _frame_height = 0;
-    _frame_bitmaps.clear();
-    _current_frame = 0;
-
-    if (_registered_class)
-    {
-        UnregisterClassW(PREVIEW_WINDOW_CLASSNAME, getInstanceHandle());
-        _registered_class = 0;
-    }
 
     return S_OK;
 }
@@ -365,7 +384,7 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::TranslateAccelerator(MSG* pmsg)
 HRESULT STDMETHODCALLTYPE flifPreviewHandler::Initialize(IStream *pstream, DWORD grfMode)
 {
     if (_preview_window)
-        return E_FAIL;
+        return E_FAIL; // already initialized
 
     _stream.reset(pstream);
     return S_OK;
