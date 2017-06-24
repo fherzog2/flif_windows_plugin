@@ -110,48 +110,52 @@ STDMETHODIMP flifPreviewHandler::QueryInterface(REFIID iid, void** ppvObject)
 
 HRESULT STDMETHODCALLTYPE flifPreviewHandler::SetWindow(HWND hwnd, const RECT* prc)
 {
-    if (!(hwnd && prc))
-        return E_INVALIDARG;
+    CUSTOM_TRY
+        if (!(hwnd && prc))
+            return E_INVALIDARG;
 
-    _parent_window = hwnd;
-    _parent_window_rect = *prc;
+        _parent_window = hwnd;
+        _parent_window_rect = *prc;
 
-    if (_preview_window)
-    {
-        // Update preview window parent and rect information
-        SetParent(_preview_window, _parent_window);
-        SetWindowPos(_preview_window, NULL,
-            _parent_window_rect.left,
-            _parent_window_rect.top,
-            _parent_window_rect.right - _parent_window_rect.left,
-            _parent_window_rect.bottom - _parent_window_rect.top,
-            SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-    }
+        if (_preview_window)
+        {
+            // Update preview window parent and rect information
+            SetParent(_preview_window, _parent_window);
+            SetWindowPos(_preview_window, NULL,
+                _parent_window_rect.left,
+                _parent_window_rect.top,
+                _parent_window_rect.right - _parent_window_rect.left,
+                _parent_window_rect.bottom - _parent_window_rect.top,
+                SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+        }
 
-    return S_OK;
+        return S_OK;
+    CUSTOM_CATCH_RETURN_HRESULT
 }
 
 HRESULT STDMETHODCALLTYPE flifPreviewHandler::SetRect(const RECT* prc)
 {
-    if (!prc)
-        return E_INVALIDARG;
+    CUSTOM_TRY
+        if (!prc)
+            return E_INVALIDARG;
 
-    _parent_window_rect = *prc;
+        _parent_window_rect = *prc;
 
-    if (_preview_window)
-    {
-        // Preview window is already created, so set its size and position.
-        SetWindowPos(_preview_window, NULL,
-            _parent_window_rect.left,
-            _parent_window_rect.top,
-            (_parent_window_rect.right - _parent_window_rect.left),
-            (_parent_window_rect.bottom - _parent_window_rect.top),
-            SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+        if (_preview_window)
+        {
+            // Preview window is already created, so set its size and position.
+            SetWindowPos(_preview_window, NULL,
+                _parent_window_rect.left,
+                _parent_window_rect.top,
+                (_parent_window_rect.right - _parent_window_rect.left),
+                (_parent_window_rect.bottom - _parent_window_rect.top),
+                SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
 
-        updateLayout();
-    }
+            updateLayout();
+        }
 
-    return S_OK;
+        return S_OK;
+    CUSTOM_CATCH_RETURN_HRESULT
 }
 
 HBITMAP createDibSectionFromFlifImage(FLIF_IMAGE* image)
@@ -211,183 +215,195 @@ HBITMAP createDibSectionFromFlifImage(FLIF_IMAGE* image)
 
 HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
 {
-    if (_preview_window)
-        return E_FAIL; // called twice
+    CUSTOM_TRY
+        if (_preview_window)
+            return E_FAIL; // called twice
 
-    // deletes the incomplete preview window data if anything fails in this function (also in case of exceptions)
-    PreviewWindowDataDeleter deleter(*this);
+        // deletes the incomplete preview window data if anything fails in this function (also in case of exceptions)
+        PreviewWindowDataDeleter deleter(*this);
 
-    vector<BYTE> bytes;
-    HRESULT hr = flifBitmapDecoder::streamReadAll(_stream.get(), bytes);
-    if (FAILED(hr))
-        return hr;
+        vector<BYTE> bytes;
+        HRESULT hr = flifBitmapDecoder::streamReadAll(_stream.get(), bytes);
+        if (FAILED(hr))
+            return hr;
 
-    flifDecoder decoder;
-    if (!decoder)
-        return E_FAIL;
-
-    if (!flif_decoder_decode_memory(decoder, bytes.data(), bytes.size()))
-        return E_FAIL;
-
-    for (size_t i = 0; i < flif_decoder_num_images(decoder); ++i)
-    {
-        FLIF_IMAGE* image = flif_decoder_get_image(decoder, i);
-        if (!image)
+        flifDecoder decoder;
+        if (!decoder)
             return E_FAIL;
 
-        _frame_width = flif_image_get_width(image);
-        _frame_height = flif_image_get_height(image);
+        if (!flif_decoder_decode_memory(decoder, bytes.data(), bytes.size()))
+            return E_FAIL;
 
-        HBITMAP bitmap = createDibSectionFromFlifImage(image);
-        _frame_bitmaps.push_back(bitmap);
-    }
+        for (size_t i = 0; i < flif_decoder_num_images(decoder); ++i)
+        {
+            FLIF_IMAGE* image = flif_decoder_get_image(decoder, i);
+            if (!image)
+                return E_FAIL;
 
-    WNDCLASSEXW wcex;
+            _frame_width = flif_image_get_width(image);
+            _frame_height = flif_image_get_height(image);
 
-    wcex.cbSize = sizeof(WNDCLASSEX);
-    wcex.style = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc = WND_PROC_FLIF_PREVIEW_HANDLER;
-    wcex.cbClsExtra = 0;
-    wcex.cbWndExtra = 0;
-    wcex.hInstance = getInstanceHandle();
-    wcex.hIcon = LoadIcon(getInstanceHandle(), MAKEINTRESOURCE(IDI_APPLICATION));
-    wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wcex.lpszMenuName = NULL;
-    wcex.lpszClassName = PREVIEW_WINDOW_CLASSNAME;
-    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_APPLICATION));
+            HBITMAP bitmap = createDibSectionFromFlifImage(image);
+            _frame_bitmaps.push_back(bitmap);
+        }
 
-    _registered_class = RegisterClassExW(&wcex);
-    if (!_registered_class)
-    {
-        DWORD last_error = GetLastError();
-        MessageBox(0, ("RegisterClass: " + to_string(last_error)).data(), 0, 0);
-        return HRESULT_FROM_WIN32(last_error);
-    }
+        WNDCLASSEXW wcex;
 
-    _preview_window = CreateWindowW(PREVIEW_WINDOW_CLASSNAME,
-        L"",
-        WS_CHILD,
-        _parent_window_rect.left,
-        _parent_window_rect.top,
-        _parent_window_rect.right - _parent_window_rect.left,
-        _parent_window_rect.bottom - _parent_window_rect.top,
-        _parent_window,
-        0,
-        getInstanceHandle(),
-        0);
+        wcex.cbSize = sizeof(WNDCLASSEX);
+        wcex.style = CS_HREDRAW | CS_VREDRAW;
+        wcex.lpfnWndProc = WND_PROC_FLIF_PREVIEW_HANDLER;
+        wcex.cbClsExtra = 0;
+        wcex.cbWndExtra = 0;
+        wcex.hInstance = getInstanceHandle();
+        wcex.hIcon = LoadIcon(getInstanceHandle(), MAKEINTRESOURCE(IDI_APPLICATION));
+        wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+        wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+        wcex.lpszMenuName = NULL;
+        wcex.lpszClassName = PREVIEW_WINDOW_CLASSNAME;
+        wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_APPLICATION));
 
-    if (_preview_window == 0)
-    {
-        DWORD last_error = GetLastError();
-        MessageBox(0, ("CreateWindow: " + to_string(last_error)).data(), 0, 0);
-        return HRESULT_FROM_WIN32(last_error);
-    }
+        _registered_class = RegisterClassExW(&wcex);
+        if (!_registered_class)
+        {
+            DWORD last_error = GetLastError();
+            MessageBox(0, ("RegisterClass: " + to_string(last_error)).data(), 0, 0);
+            return HRESULT_FROM_WIN32(last_error);
+        }
 
-    SetWindowLongPtrW(_preview_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-
-    _image_window = CreateWindowExW(WS_EX_CLIENTEDGE,
-        L"STATIC",
-        L"",
-        WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_REALSIZECONTROL,
-        10, 10,
-        400,
-        400,
-        _preview_window,
-        0,
-        getInstanceHandle(),
-        0);
-
-    if (!_image_window)
-    {
-        DWORD last_error = GetLastError();
-        MessageBox(0, ("CreateWindow: " + to_string(last_error)).data(), 0, 0);
-        return HRESULT_FROM_WIN32(last_error);
-    }
-
-    if (_frame_bitmaps.size() > 1)
-    {
-        _play_button = CreateWindowW(L"BUTTON",
-            L"Play",
-            WS_CHILD | WS_VISIBLE,
-            10, 420,
-            200,
-            50,
-            _preview_window,
+        _preview_window = CreateWindowW(PREVIEW_WINDOW_CLASSNAME,
+            L"",
+            WS_CHILD,
+            _parent_window_rect.left,
+            _parent_window_rect.top,
+            _parent_window_rect.right - _parent_window_rect.left,
+            _parent_window_rect.bottom - _parent_window_rect.top,
+            _parent_window,
             0,
             getInstanceHandle(),
             0);
 
-        if (!_play_button)
+        if (_preview_window == 0)
         {
             DWORD last_error = GetLastError();
             MessageBox(0, ("CreateWindow: " + to_string(last_error)).data(), 0, 0);
             return HRESULT_FROM_WIN32(last_error);
         }
-    }
 
-    updateLayout();
+        SetWindowLongPtrW(_preview_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
 
-    if(!_frame_bitmaps.empty())
-        SendMessage(_image_window, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(_frame_bitmaps[0]._dib_section));
+        _image_window = CreateWindowExW(WS_EX_CLIENTEDGE,
+            L"STATIC",
+            L"",
+            WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_REALSIZECONTROL,
+            10, 10,
+            400,
+            400,
+            _preview_window,
+            0,
+            getInstanceHandle(),
+            0);
 
-    ShowWindow(_preview_window, SW_SHOW);
+        if (!_image_window)
+        {
+            DWORD last_error = GetLastError();
+            MessageBox(0, ("CreateWindow: " + to_string(last_error)).data(), 0, 0);
+            return HRESULT_FROM_WIN32(last_error);
+        }
 
-    // everything successful, disarm deleter
-    deleter.should_delete = false;
+        if (_frame_bitmaps.size() > 1)
+        {
+            _play_button = CreateWindowW(L"BUTTON",
+                L"Play",
+                WS_CHILD | WS_VISIBLE,
+                10, 420,
+                200,
+                50,
+                _preview_window,
+                0,
+                getInstanceHandle(),
+                0);
 
-    // not needed anymore
-    _stream.reset(0);
+            if (!_play_button)
+            {
+                DWORD last_error = GetLastError();
+                MessageBox(0, ("CreateWindow: " + to_string(last_error)).data(), 0, 0);
+                return HRESULT_FROM_WIN32(last_error);
+            }
+        }
 
-    return S_OK;
+        updateLayout();
+
+        if (!_frame_bitmaps.empty())
+            SendMessage(_image_window, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(_frame_bitmaps[0]._dib_section));
+
+        ShowWindow(_preview_window, SW_SHOW);
+
+        // everything successful, disarm deleter
+        deleter.should_delete = false;
+
+        // not needed anymore
+        _stream.reset(0);
+
+        return S_OK;
+    CUSTOM_CATCH_RETURN_HRESULT
 }
 
 HRESULT STDMETHODCALLTYPE flifPreviewHandler::Unload()
 {
-    destroyPreviewWindowData();
+    CUSTOM_TRY
+        destroyPreviewWindowData();
 
-    // throw away initialization parameters, too
-    _parent_window = 0;
-    _parent_window_rect = { 0, 0, 0, 0 };
-    _stream.reset(0);
+        // throw away initialization parameters, too
+        _parent_window = 0;
+        _parent_window_rect = { 0, 0, 0, 0 };
+        _stream.reset(0);
 
-    return S_OK;
+        return S_OK;
+    CUSTOM_CATCH_RETURN_HRESULT
 }
 
 HRESULT STDMETHODCALLTYPE flifPreviewHandler::SetFocus()
 {
-    if (_preview_window)
-    {
-        ::SetFocus(_preview_window);
-        return S_OK;
-    }
-    return S_FALSE;
+    CUSTOM_TRY
+        if (_preview_window)
+        {
+            ::SetFocus(_preview_window);
+            return S_OK;
+        }
+        return S_FALSE;
+    CUSTOM_CATCH_RETURN_HRESULT
 }
 
 HRESULT STDMETHODCALLTYPE flifPreviewHandler::QueryFocus(HWND* phwnd)
 {
-    if (!phwnd)
-        return E_INVALIDARG;
+    CUSTOM_TRY
+        if (!phwnd)
+            return E_INVALIDARG;
 
-    *phwnd = GetFocus();
-    if (*phwnd)
-        return S_OK;
-    else
-        return HRESULT_FROM_WIN32(GetLastError());
+        *phwnd = GetFocus();
+        if (*phwnd)
+            return S_OK;
+        else
+            return HRESULT_FROM_WIN32(GetLastError());
+    CUSTOM_CATCH_RETURN_HRESULT
 }
 
 HRESULT STDMETHODCALLTYPE flifPreviewHandler::TranslateAccelerator(MSG* pmsg)
 {
-    return S_OK;
+    CUSTOM_TRY
+        return S_OK;
+    CUSTOM_CATCH_RETURN_HRESULT
 }
 
 HRESULT STDMETHODCALLTYPE flifPreviewHandler::Initialize(IStream *pstream, DWORD grfMode)
 {
-    if (_preview_window)
-        return E_FAIL; // already initialized
+    CUSTOM_TRY
+        if (_preview_window)
+            return E_FAIL; // already initialized
 
-    _stream.reset(pstream);
-    return S_OK;
+        _stream.reset(pstream);
+        return S_OK;
+    CUSTOM_CATCH_RETURN_HRESULT
 }
 
 void flifPreviewHandler::togglePlayState()
