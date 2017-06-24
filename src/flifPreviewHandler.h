@@ -78,6 +78,7 @@ public:
 
     void togglePlayState();
     void showNextFrame();
+    void showFrameFromScrollBar(size_t frame);
 
     static void registerClass(RegistryManager& reg);
     static void unregisterClass(RegistryManager& reg);
@@ -95,8 +96,9 @@ private:
     // PREVIEW WINDOW DATA: only valid between DoPreview() and Unload()
     ATOM _registered_class;
     HWND _preview_window;
-    HWND _image_window; // owned by _preview_window
-    HWND _play_button;  // owned by _preview_window
+    HWND _image_window;    // owned by _preview_window
+    HWND _play_button;     // owned by _preview_window
+    HWND _frame_scrollbar; // owned by _preview_window
     bool _playing;
 
     int _frame_width;

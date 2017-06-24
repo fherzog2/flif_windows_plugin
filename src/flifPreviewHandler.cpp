@@ -20,6 +20,80 @@ limitations under the License.
 
 const WCHAR PREVIEW_WINDOW_CLASSNAME[] = L"flifPreviewHandler";
 
+/**
+* Boilerplate code for reacting to WM_HSCROLL/WM_VSCROLL events.
+* @return Updated scrollbar position
+*/
+int updateScrollBar(HWND hwnd, UINT message, WPARAM wp, LPARAM lp)
+{
+    int scrollCode = LOWORD(wp);
+    int scrollPos = HIWORD(wp);
+    HWND scrollBar = reinterpret_cast<HWND>(lp);
+
+    HWND scrollBarHandle;
+    int scrollBarType;
+    if (scrollBar)
+    {
+        scrollBarHandle = scrollBar;
+        scrollBarType = SB_CTL;
+    }
+    else
+    {
+        scrollBarHandle = hwnd;
+        scrollBarType = message == WM_HSCROLL ? SB_HORZ : SB_VERT;
+    }
+
+    SCROLLINFO si;
+    si.cbSize = sizeof(si);
+    si.fMask = SIF_PAGE | SIF_POS | SIF_RANGE;
+    GetScrollInfo(scrollBarHandle, scrollBarType, &si);
+
+    switch (scrollCode) {
+    case SB_LINELEFT:
+        //case SB_LINEUP:
+        si.nPos -= 1;
+        break;
+    case SB_LINERIGHT:
+        //case SB_LINEDOWN:
+        si.nPos += 1;
+        break;
+    case SB_PAGELEFT:
+        //case SB_PAGEUP:
+        if (si.nPage == 0)
+            si.nPos -= 1;
+        else
+            si.nPos -= si.nPage;
+        break;
+    case SB_PAGERIGHT:
+        //case SB_PAGEDOWN:
+        if (si.nPage == 0)
+            si.nPos += 1;
+        else
+            si.nPos += si.nPage;
+        break;
+    case SB_LEFT:
+        //case SB_TOP:
+        si.nPos = si.nMin;
+        break;
+    case SB_RIGHT:
+        //case SB_BOTTOM:
+        si.nPos = si.nMax;
+        break;
+    case SB_THUMBTRACK:
+        si.nPos = scrollPos;
+        break;
+    case SB_THUMBPOSITION:
+        si.nPos = scrollPos;
+        break;
+    default:
+        break;
+    }
+
+    SetScrollPos(scrollBarHandle, scrollBarType, si.nPos, TRUE);
+
+    return si.nPos;
+}
+
 LRESULT CALLBACK WND_PROC_FLIF_PREVIEW_HANDLER(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
@@ -38,6 +112,14 @@ LRESULT CALLBACK WND_PROC_FLIF_PREVIEW_HANDLER(HWND hWnd, UINT message, WPARAM w
             handler->showNextFrame();
         }
         break;
+    case WM_HSCROLL:
+        {
+            int scroll_pos = updateScrollBar(hWnd, message, wParam, lParam);
+
+            flifPreviewHandler* handler = reinterpret_cast<flifPreviewHandler*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+            handler->showFrameFromScrollBar(scroll_pos);
+        }
+        break;
     }
 
     return DefWindowProcW(hWnd, message, wParam, lParam);
@@ -52,6 +134,7 @@ flifPreviewHandler::flifPreviewHandler()
     , _preview_window(0)
     , _image_window(0)
     , _play_button(0)
+    , _frame_scrollbar(0)
     , _playing(false)
     , _frame_width(0)
     , _frame_height(0)
@@ -74,6 +157,7 @@ void flifPreviewHandler::destroyPreviewWindowData()
         _preview_window = 0;
         _image_window = 0;
         _play_button = 0;
+        _frame_scrollbar = 0;
     }
 
     if (_registered_class)
@@ -295,9 +379,10 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
             L"STATIC",
             L"",
             WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_REALSIZECONTROL,
-            10, 10,
-            400,
-            400,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
             _preview_window,
             0,
             getInstanceHandle(),
@@ -315,9 +400,10 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
             _play_button = CreateWindowW(L"BUTTON",
                 L"Play",
                 WS_CHILD | WS_VISIBLE,
-                10, 420,
-                200,
-                50,
+                CW_USEDEFAULT,
+                CW_USEDEFAULT,
+                CW_USEDEFAULT,
+                CW_USEDEFAULT,
                 _preview_window,
                 0,
                 getInstanceHandle(),
@@ -329,6 +415,27 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
                 MessageBox(0, ("CreateWindow: " + to_string(last_error)).data(), 0, 0);
                 return HRESULT_FROM_WIN32(last_error);
             }
+
+            _frame_scrollbar = CreateWindowW(L"SCROLLBAR",
+                L"Play",
+                WS_CHILD | WS_VISIBLE | SBS_HORZ,
+                CW_USEDEFAULT,
+                CW_USEDEFAULT,
+                CW_USEDEFAULT,
+                CW_USEDEFAULT,
+                _preview_window,
+                0,
+                getInstanceHandle(),
+                0);
+
+            if (!_frame_scrollbar)
+            {
+                DWORD last_error = GetLastError();
+                MessageBox(0, ("CreateWindow: " + to_string(last_error)).data(), 0, 0);
+                return HRESULT_FROM_WIN32(last_error);
+            }
+
+            SetScrollRange(_frame_scrollbar, SB_CTL, 0, _frame_bitmaps.size(), FALSE /*redraw*/);
         }
 
         updateLayout();
@@ -430,6 +537,20 @@ void flifPreviewHandler::showNextFrame()
     {
         _current_frame = (_current_frame + 1) % _frame_bitmaps.size();
         SendMessage(_image_window, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(_frame_bitmaps[_current_frame]._dib_section));
+        SetScrollPos(_frame_scrollbar, SB_CTL, _current_frame, TRUE /*redraw*/);
+    }
+}
+
+void flifPreviewHandler::showFrameFromScrollBar(size_t frame)
+{
+    _playing = false;
+    KillTimer(_preview_window, 1);
+    SetWindowTextW(_play_button, L"Play");
+
+    if (frame < _frame_bitmaps.size())
+    {
+        _current_frame = frame;
+        SendMessage(_image_window, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(_frame_bitmaps[_current_frame]._dib_section));
     }
 }
 
@@ -482,6 +603,13 @@ void flifPreviewHandler::updateLayout()
             image_x,
             control_y,
             100,
+            control_height,
+            SWP_NOZORDER | SWP_NOACTIVATE);
+
+        SetWindowPos(_frame_scrollbar, NULL,
+            image_x + 100 + spacing,
+            control_y,
+            image_width - 100 - spacing,
             control_height,
             SWP_NOZORDER | SWP_NOACTIVATE);
     }
