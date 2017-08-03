@@ -254,7 +254,7 @@ HRESULT STDMETHODCALLTYPE flifPropertyHandler::Commit(void)
 *         S_FALSE if there is more data.
 *         An error code if the reading or decoding failed.
 */
-HRESULT readChunkAndTryDecoding(IStream *stream, size_t chunk_size, vector<BYTE>& buffer, flifDecoder& decoder)
+HRESULT readChunkAndTryDecoding(IStream *stream, size_t chunk_size, std::vector<BYTE>& buffer, flifDecoder& decoder)
 {
     const size_t previous_size = buffer.size();
     buffer.resize(buffer.size() + chunk_size);
@@ -284,7 +284,7 @@ HRESULT STDMETHODCALLTYPE flifPropertyHandler::Initialize(IStream *stream, DWORD
 {
     CUSTOM_TRY
 
-        lock_guard<CriticalSection> lock(_cs_init);
+        std::lock_guard<CriticalSection> lock(_cs_init);
         if(_is_initialized)
             return HRESULT_FROM_WIN32(ERROR_ALREADY_INITIALIZED);
 
@@ -292,7 +292,7 @@ HRESULT STDMETHODCALLTYPE flifPropertyHandler::Initialize(IStream *stream, DWORD
         if(FAILED(hr))
             return hr;
 
-        vector<BYTE> read_buffer;
+        std::vector<BYTE> read_buffer;
         flifDecoder decoder;
         if(decoder == 0)
             return E_FAIL;
@@ -330,7 +330,7 @@ HRESULT STDMETHODCALLTYPE flifPropertyHandler::Initialize(IStream *stream, DWORD
                 _prop_cache->SetValueAndState(PKEY_Image_VerticalSize, &prop_height, PSC_NORMAL);
 
             ScopedPropVariant prop_dimensions;
-            init_result = InitPropVariantFromString((to_wstring(_width) + L" x " + to_wstring(_height)).data(), &prop_dimensions);
+            init_result = InitPropVariantFromString((std::to_wstring(_width) + L" x " + std::to_wstring(_height)).data(), &prop_dimensions);
             if(SUCCEEDED(init_result))
                 _prop_cache->SetValueAndState(PKEY_Image_Dimensions, &prop_dimensions, PSC_NORMAL);
 

@@ -113,8 +113,8 @@ private:
     int _frame_width;
     int _frame_height;
     int32_t _num_loops;
-    vector<DibSection> _frame_bitmaps;
-    vector<std::chrono::milliseconds> _frame_delays;
+    std::vector<DibSection> _frame_bitmaps;
+    std::vector<std::chrono::milliseconds> _frame_delays;
     std::chrono::milliseconds _loop_time;
 
     PlayState _play_state;

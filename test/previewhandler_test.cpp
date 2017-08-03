@@ -115,7 +115,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     if (!RegisterClassExW(&wcex))
     {
         DWORD last_error = GetLastError();
-        MessageBox(0, ("RegisterClass: " + to_string(last_error)).data(), 0, 0);
+        MessageBox(0, ("RegisterClass: " + std::to_string(last_error)).data(), 0, 0);
         return last_error;
     }
 
@@ -134,7 +134,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     if (!main)
     {
         DWORD last_error = GetLastError();
-        MessageBox(0, ("CreateWindow: " + to_string(last_error)).data(), 0, 0);
+        MessageBox(0, ("CreateWindow: " + std::to_string(last_error)).data(), 0, 0);
         return last_error;
     }
 

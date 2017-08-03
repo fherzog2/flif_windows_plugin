@@ -16,19 +16,19 @@ limitations under the License.
 
 #include "RegistryManager.h"
 
-inline wstring formatRegErrorCode(LONG error)
+inline std::wstring formatRegErrorCode(LONG error)
 {
     const DWORD BUFFER_SIZE = 256;
     WCHAR buffer[BUFFER_SIZE];
     if(0 != FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, 0, error, 0, buffer, BUFFER_SIZE, 0))
         return buffer;
 
-    return wstring();
+    return std::wstring();
 }
 
 //=============================================================================
 
-RegistryManager::ErrorRecord::ErrorRecord(const Key& key, const wstring& value_name, LONG error, const wstring& context)
+RegistryManager::ErrorRecord::ErrorRecord(const Key& key, const std::wstring& value_name, LONG error, const std::wstring& context)
     : _key(key)
     , _value_name(value_name)
     , _error_code(HRESULT_FROM_WIN32(error))
@@ -38,12 +38,12 @@ RegistryManager::ErrorRecord::ErrorRecord(const Key& key, const wstring& value_n
 
 //=============================================================================
 
-RegistryManager::Key RegistryManager::key(HKEY root, const wstring& subkey)
+RegistryManager::Key RegistryManager::key(HKEY root, const std::wstring& subkey)
 {
     return Key(root, subkey);
 }
 
-HRESULT RegistryManager::writeValue(const Key& key, const wstring& value_name, DWORD value_type, const BYTE* value_ptr, DWORD value_size)
+HRESULT RegistryManager::writeValue(const Key& key, const std::wstring& value_name, DWORD value_type, const BYTE* value_ptr, DWORD value_size)
 {
     HKEY hkey = 0;
     LONG create_key_result = RegCreateKeyW(key._root, key._subkey.data(), &hkey);
@@ -67,12 +67,12 @@ HRESULT RegistryManager::writeValue(const Key& key, const wstring& value_name, D
     return S_OK;
 }
 
-HRESULT RegistryManager::writeDWORD(const Key& key, const wstring& value_name, DWORD value)
+HRESULT RegistryManager::writeDWORD(const Key& key, const std::wstring& value_name, DWORD value)
 {
     return writeValue(key, value_name, REG_DWORD, reinterpret_cast<const BYTE*>(&value), sizeof(DWORD));
 }
 
-HRESULT RegistryManager::writeString(const Key& key, const wstring& value_name, const wstring& value)
+HRESULT RegistryManager::writeString(const Key& key, const std::wstring& value_name, const std::wstring& value)
 {
     // check limits before truncating value
     size_t bytes_to_write = (value.size() + 1) * sizeof(WCHAR);
@@ -82,7 +82,7 @@ HRESULT RegistryManager::writeString(const Key& key, const wstring& value_name, 
     return writeValue(key, value_name, REG_SZ, reinterpret_cast<const BYTE*>(value.data()), static_cast<DWORD>(bytes_to_write));
 }
 
-HRESULT RegistryManager::writeExpandableString(const Key& key, const wstring& value_name, const wstring& value)
+HRESULT RegistryManager::writeExpandableString(const Key& key, const std::wstring& value_name, const std::wstring& value)
 {
     // check limits before truncating value
     size_t bytes_to_write = (value.size() + 1) * sizeof(WCHAR);
@@ -92,7 +92,7 @@ HRESULT RegistryManager::writeExpandableString(const Key& key, const wstring& va
     return writeValue(key, value_name, REG_EXPAND_SZ, reinterpret_cast<const BYTE*>(value.data()), static_cast<DWORD>(bytes_to_write));
 }
 
-HRESULT RegistryManager::writeData(const Key& key, const wstring& value_name, const BYTE* data, DWORD data_size)
+HRESULT RegistryManager::writeData(const Key& key, const std::wstring& value_name, const BYTE* data, DWORD data_size)
 {
     return writeValue(key, value_name, REG_BINARY, data, data_size);
 }
@@ -121,20 +121,20 @@ HRESULT RegistryManager::removeTree(const Key& key)
     return S_OK;
 }
 
-const vector<RegistryManager::ErrorRecord>& RegistryManager::getErrors() const
+const std::vector<RegistryManager::ErrorRecord>& RegistryManager::getErrors() const
 {
     return _error_buffer;
 }
 
 void RegistryManager::showErrors() const
 {
-    wstring text;
+    std::wstring text;
 
     for(size_t i = 0; i < _error_buffer.size() && i < 10; ++i)
     {
         const ErrorRecord& e = _error_buffer[i];
 
-        wstring root_str = L"unknown root";
+        std::wstring root_str = L"unknown root";
 
         if(e._key._root == HKEY_CLASSES_ROOT)
             root_str = L"HKEY_CLASSES_ROOT";

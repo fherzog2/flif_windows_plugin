@@ -19,7 +19,6 @@ limitations under the License.
 #include <Windows.h>
 #include <string>
 #include <vector>
-using namespace std;
 
 class RegistryManager
 {
@@ -31,41 +30,41 @@ public:
             : _root(HKEY_CURRENT_USER)
         {
         }
-        Key(HKEY root, const wstring& subkey)
+        Key(HKEY root, const std::wstring& subkey)
             : _root(root)
             , _subkey(subkey)
         {
         }
 
         HKEY _root;
-        wstring _subkey;
+        std::wstring _subkey;
     };
 
     class ErrorRecord
     {
     public:
-        ErrorRecord(const Key& key, const wstring& value_name, LONG error, const wstring& context);
+        ErrorRecord(const Key& key, const std::wstring& value_name, LONG error, const std::wstring& context);
 
         Key _key;
-        wstring _value_name;
+        std::wstring _value_name;
 
         HRESULT _error_code;
-        wstring _error;
+        std::wstring _error;
     };
 
-    static Key key(HKEY root, const wstring& subkey);
+    static Key key(HKEY root, const std::wstring& subkey);
 
-    HRESULT writeDWORD(const Key& key, const wstring& value_name, DWORD value);
-    HRESULT writeString(const Key& key, const wstring& value_name, const wstring& value);
-    HRESULT writeExpandableString(const Key& key, const wstring& value_name, const wstring& value);
-    HRESULT writeData(const Key& key, const wstring& value_name, const BYTE* data, DWORD data_size);
+    HRESULT writeDWORD(const Key& key, const std::wstring& value_name, DWORD value);
+    HRESULT writeString(const Key& key, const std::wstring& value_name, const std::wstring& value);
+    HRESULT writeExpandableString(const Key& key, const std::wstring& value_name, const std::wstring& value);
+    HRESULT writeData(const Key& key, const std::wstring& value_name, const BYTE* data, DWORD data_size);
     HRESULT removeKey(const Key& key);
     HRESULT removeTree(const Key& key);
 
-    const vector<ErrorRecord>& getErrors() const;
+    const std::vector<ErrorRecord>& getErrors() const;
     void showErrors() const;
 private:
-    HRESULT writeValue(const Key& key, const wstring& value_name, DWORD value_type, const BYTE* value_ptr, DWORD value_size);
+    HRESULT writeValue(const Key& key, const std::wstring& value_name, DWORD value_type, const BYTE* value_ptr, DWORD value_size);
 
-    vector<ErrorRecord> _error_buffer;
+    std::vector<ErrorRecord> _error_buffer;
 };

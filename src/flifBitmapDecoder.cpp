@@ -263,7 +263,7 @@ HRESULT STDMETHODCALLTYPE flifBitmapDecoder::Initialize(IStream* stream, WICDeco
 {
     CUSTOM_TRY
 
-        lock_guard<CriticalSection> lock(_cs_init_data);
+        std::lock_guard<CriticalSection> lock(_cs_init_data);
 
         if(_decoder == 0)
             return E_FAIL;
@@ -272,7 +272,7 @@ HRESULT STDMETHODCALLTYPE flifBitmapDecoder::Initialize(IStream* stream, WICDeco
         if(_initialized)
             return E_FAIL;
         
-        vector<BYTE> bytes;
+        std::vector<BYTE> bytes;
         HRESULT hr = streamReadAll(stream, bytes);
         if(FAILED(hr))
             return hr;
@@ -373,7 +373,7 @@ HRESULT STDMETHODCALLTYPE flifBitmapDecoder::GetFrameCount(UINT* count)
 {
     CUSTOM_TRY
 
-        lock_guard<CriticalSection> lock(_cs_init_data);
+        std::lock_guard<CriticalSection> lock(_cs_init_data);
 
         // check limits before truncating value
         size_t n = flif_decoder_num_images(_decoder);
@@ -390,7 +390,7 @@ HRESULT STDMETHODCALLTYPE flifBitmapDecoder::GetFrame(UINT index, IWICBitmapFram
 {
     CUSTOM_TRY
 
-        lock_guard<CriticalSection> lock(_cs_init_data);
+        std::lock_guard<CriticalSection> lock(_cs_init_data);
 
         if(index >= flif_decoder_num_images(_decoder))
             return WINCODEC_ERR_FRAMEMISSING;
@@ -405,7 +405,7 @@ HRESULT STDMETHODCALLTYPE flifBitmapDecoder::GetFrame(UINT index, IWICBitmapFram
             ComPtr<flifBitmapFrameDecode> frame(new flifBitmapFrameDecode());
             frame->extractFrame(_decoder, index);
 
-            _frames[index] = move(frame);
+            _frames[index] = std::move(frame);
         }
 
         _frames[index]->QueryInterface(IID_IWICBitmapFrameDecode, reinterpret_cast<void**>(bitmap_frame));
@@ -431,7 +431,7 @@ HRESULT flifBitmapDecoder::checkStreamIsFLIF(IStream* stream)
     return S_OK;
 }
 
-HRESULT flifBitmapDecoder::streamReadAll(IStream* stream, vector<BYTE>& bytes)
+HRESULT flifBitmapDecoder::streamReadAll(IStream* stream, std::vector<BYTE>& bytes)
 {
     const size_t GROWTH_STEP = 10000;
 

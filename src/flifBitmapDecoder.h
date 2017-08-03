@@ -52,7 +52,7 @@ private:
 
     uint32_t _width;
     uint32_t _height;
-    vector<flifRGBA> _pixels;
+    std::vector<flifRGBA> _pixels;
 };
 
 /*!
@@ -87,7 +87,7 @@ public:
     static void unregisterClass(RegistryManager& reg);
 
     static HRESULT checkStreamIsFLIF(IStream* stream);
-    static HRESULT streamReadAll(IStream* stream, vector<BYTE>& bytes);
+    static HRESULT streamReadAll(IStream* stream, std::vector<BYTE>& bytes);
 
 private:
     ComRefCountImpl _ref_count;
@@ -95,5 +95,5 @@ private:
     CriticalSection _cs_init_data;
     bool _initialized;
     flifDecoder _decoder;
-    vector<ComPtr<flifBitmapFrameDecode>> _frames;
+    std::vector<ComPtr<flifBitmapFrameDecode>> _frames;
 };

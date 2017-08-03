@@ -317,7 +317,7 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
         // deletes the incomplete preview window data if anything fails in this function (also in case of exceptions)
         PreviewWindowDataDeleter deleter(*this);
 
-        vector<BYTE> bytes;
+        std::vector<BYTE> bytes;
         HRESULT hr = flifBitmapDecoder::streamReadAll(_stream.get(), bytes);
         if (FAILED(hr))
             return hr;
@@ -373,7 +373,7 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
         if (!_registered_class)
         {
             DWORD last_error = GetLastError();
-            MessageBox(0, ("RegisterClass: " + to_string(last_error)).data(), 0, 0);
+            MessageBox(0, ("RegisterClass: " + std::to_string(last_error)).data(), 0, 0);
             return HRESULT_FROM_WIN32(last_error);
         }
 
@@ -392,7 +392,7 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
         if (_preview_window == 0)
         {
             DWORD last_error = GetLastError();
-            MessageBox(0, ("CreateWindow: " + to_string(last_error)).data(), 0, 0);
+            MessageBox(0, ("CreateWindow: " + std::to_string(last_error)).data(), 0, 0);
             return HRESULT_FROM_WIN32(last_error);
         }
 
@@ -414,7 +414,7 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
         if (!_image_window)
         {
             DWORD last_error = GetLastError();
-            MessageBox(0, ("CreateWindow: " + to_string(last_error)).data(), 0, 0);
+            MessageBox(0, ("CreateWindow: " + std::to_string(last_error)).data(), 0, 0);
             return HRESULT_FROM_WIN32(last_error);
         }
 
@@ -435,7 +435,7 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
             if (!_play_button)
             {
                 DWORD last_error = GetLastError();
-                MessageBox(0, ("CreateWindow: " + to_string(last_error)).data(), 0, 0);
+                MessageBox(0, ("CreateWindow: " + std::to_string(last_error)).data(), 0, 0);
                 return HRESULT_FROM_WIN32(last_error);
             }
 
@@ -454,7 +454,7 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
             if (!_frame_scrollbar)
             {
                 DWORD last_error = GetLastError();
-                MessageBox(0, ("CreateWindow: " + to_string(last_error)).data(), 0, 0);
+                MessageBox(0, ("CreateWindow: " + std::to_string(last_error)).data(), 0, 0);
                 return HRESULT_FROM_WIN32(last_error);
             }
 

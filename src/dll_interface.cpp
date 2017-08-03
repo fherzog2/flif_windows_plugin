@@ -51,9 +51,9 @@ void DllRelease()
 
 HINSTANCE g_module_handle = 0;
 
-wstring getThisLibraryPath()
+std::wstring getThisLibraryPath()
 {
-    vector<WCHAR> buffer;
+    std::vector<WCHAR> buffer;
     buffer.resize(256);
 
     for(DWORD n = 256; n <= 4096; n *= 2)
@@ -61,12 +61,12 @@ wstring getThisLibraryPath()
         buffer.resize(n);
         DWORD ret = GetModuleFileNameW(g_module_handle, buffer.data(), n);
         if(ret == 0)
-            throw bad_alloc();
+            throw std::bad_alloc();
         if(ret < n)
             return buffer.data();
     }
 
-    throw bad_alloc();
+    throw std::bad_alloc();
 }
 
 HINSTANCE getInstanceHandle()
@@ -74,13 +74,13 @@ HINSTANCE getInstanceHandle()
     return g_module_handle;
 }
 
-wstring to_wstring(const GUID& guid)
+std::wstring to_wstring(const GUID& guid)
 {
     OLECHAR buffer[256];
     if(StringFromGUID2(guid, buffer, 256) == 0)
-        throw bad_alloc();
+        throw std::bad_alloc();
 
-    return wstring(buffer);
+    return std::wstring(buffer);
 }
 
 void clearThumbnailCache()

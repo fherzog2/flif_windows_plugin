@@ -41,7 +41,7 @@ public:
     {
         Token()
         {}
-        Token(const wstring& pkey, const wstring& pvalue)
+        Token(const std::wstring& pkey, const std::wstring& pvalue)
             : key(pkey), value(pvalue)
         {}
 
@@ -54,53 +54,53 @@ public:
             return !(*this == other);
         }
 
-        wstring key;
-        wstring value;
+        std::wstring key;
+        std::wstring value;
     };
 
-    static wstring string_to_wstring_utf8(const string& str);
-    static string string_from_wstring_utf8(const wstring& str);
+    static std::wstring string_to_wstring_utf8(const std::string& str);
+    static std::string string_from_wstring_utf8(const std::wstring& str);
 
-    void write(const wstring& key, const wstring& value);
-    const vector<Token>& getTokens() const;
+    void write(const std::wstring& key, const std::wstring& value);
+    const std::vector<Token>& getTokens() const;
 
-    bool initFromFile(const string& filename);
-    bool writeFile(const string& filename) const;
+    bool initFromFile(const std::string& filename);
+    bool writeFile(const std::string& filename) const;
 
 private:
-    static wstring string_replace(const wstring& base_str, const wstring& old_part, const wstring& new_part);
+    static std::wstring string_replace(const std::wstring& base_str, const std::wstring& old_part, const std::wstring& new_part);
 
-    vector<Token> _tokens;
+    std::vector<Token> _tokens;
 };
 
-void TestContext::write(const wstring& key, const wstring& value)
+void TestContext::write(const std::wstring& key, const std::wstring& value)
 {
     _tokens.push_back(Token(key, value));
 }
 
-const vector<TestContext::Token>& TestContext::getTokens() const
+const std::vector<TestContext::Token>& TestContext::getTokens() const
 {
     return _tokens;
 }
 
-wstring TestContext::string_to_wstring_utf8(const string& str)
+std::wstring TestContext::string_to_wstring_utf8(const std::string& str)
 {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> utf8_converter;
     return utf8_converter.from_bytes(str);
 }
 
-string TestContext::string_from_wstring_utf8(const wstring& str)
+std::string TestContext::string_from_wstring_utf8(const std::wstring& str)
 {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> utf8_converter;
     return utf8_converter.to_bytes(str);
 }
 
-wstring TestContext::string_replace(const wstring& base_str, const wstring& old_part, const wstring& new_part)
+std::wstring TestContext::string_replace(const std::wstring& base_str, const std::wstring& old_part, const std::wstring& new_part)
 {
-    wstring result = base_str;
+    std::wstring result = base_str;
 
     auto pos = result.find(old_part);
-    while (pos != wstring::npos)
+    while (pos != std::wstring::npos)
     {
         result.replace(pos, old_part.size(), new_part);
         pos = result.find(old_part);
@@ -109,25 +109,25 @@ wstring TestContext::string_replace(const wstring& base_str, const wstring& old_
     return result;
 }
 
-bool TestContext::initFromFile(const string& filename)
+bool TestContext::initFromFile(const std::string& filename)
 {
     _tokens.clear();
 
-    fstream file(filename, fstream::in);
+    std::fstream file(filename, std::fstream::in);
     if(!file)
         return false;
 
     auto token_reader = [&](){
-        string line;
+        std::string line;
         getline(file, line);
 
         auto pos = line.find("=");
-        if(pos == string::npos)
-            return unique_ptr<Token>(nullptr);
+        if(pos == std::string::npos)
+            return std::unique_ptr<Token>(nullptr);
 
-        string key = line.substr(0, pos);
-        string value = line.substr(pos+1);
-        return unique_ptr<Token>(new Token(
+        std::string key = line.substr(0, pos);
+        std::string value = line.substr(pos+1);
+        return std::unique_ptr<Token>(new Token(
             string_to_wstring_utf8(key),
             string_replace(string_to_wstring_utf8(value), L"\\n", L"\n")));
     };
@@ -158,12 +158,12 @@ bool TestContext::initFromFile(const string& filename)
     return true;
 }
 
-bool TestContext::writeFile(const string& filename) const
+bool TestContext::writeFile(const std::string& filename) const
 {
     // write each token as text line: key=value\n
     // newlines in value are encoded as '\'+'n'
 
-    fstream file(filename, fstream::out|fstream::trunc);
+    std::fstream file(filename, std::fstream::out| std::fstream::trunc);
     if(!file)
         return false;
 
@@ -175,7 +175,7 @@ bool TestContext::writeFile(const string& filename) const
             << "\n";
     };
 
-    token_writer(Token(L"tokens.size", to_wstring(_tokens.size())));
+    token_writer(Token(L"tokens.size", std::to_wstring(_tokens.size())));
     if(!file)
         return false;
 
@@ -190,28 +190,28 @@ bool TestContext::writeFile(const string& filename) const
 
 typedef HRESULT (STDAPICALLTYPE *fpDllGetClassObject)(REFCLSID, REFIID, LPVOID);
 
-inline string formatHRESULT(HRESULT hr)
+inline std::string formatHRESULT(HRESULT hr)
 {
     _com_error e(hr);
     return e.ErrorMessage();
 }
 
-string getBaseNameFromPath(string path)
+std::string getBaseNameFromPath(std::string path)
 {
     auto path_end = path.rfind("/");
-    if(path_end != string::npos)
+    if(path_end != std::string::npos)
         path.replace(0, path_end + 1, "");
     path_end = path.rfind("\\");
-    if(path_end != string::npos)
+    if(path_end != std::string::npos)
         path.replace(0, path_end + 1, "");
 
     return path;
 }
 
-vector<BYTE> read_file(const string& filename)
+std::vector<BYTE> read_file(const std::string& filename)
 {
-    ifstream file(filename, std::ios::binary);
-    vector<BYTE> result;
+    std::ifstream file(filename, std::ios::binary);
+    std::vector<BYTE> result;
 
     for (auto it = std::istreambuf_iterator<char>(file); it != std::istreambuf_iterator<char>(); ++it)
         result.push_back(*it);
@@ -219,7 +219,7 @@ vector<BYTE> read_file(const string& filename)
     return result;
 }
 
-void debug_out(const string& message)
+void debug_out(const std::string& message)
 {
     printf("%s\n", message.data());
     fflush(stdout);
@@ -227,7 +227,7 @@ void debug_out(const string& message)
 
 #define MY_ASSERT(condition, message) \
     if((condition)) { \
-        string message2 = __FILE__ + string("(") + to_string(__LINE__) + "): " + (message); \
+        std::string message2 = __FILE__ + std::string("(") + std::to_string(__LINE__) + "): " + (message); \
         debug_out(message2);\
         fflush(stdout);\
         return 1; \
@@ -235,7 +235,7 @@ void debug_out(const string& message)
 
 #define HR_ASSERT(hr) \
     if(FAILED(hr)) { \
-        string message = __FILE__ + string("(") + to_string(__LINE__) + "): " + formatHRESULT((hr)); \
+        std::string message = __FILE__ + std::string("(") + std::to_string(__LINE__) + "): " + formatHRESULT((hr)); \
         debug_out(message);\
         return 1; \
     }
@@ -295,7 +295,7 @@ bool save_bmp(BYTE* Buffer, int width, int height, DWORD paddedsize, LPCSTR bmpf
     return true;
 }
 
-HRESULT save_bitmapframe(IWICBitmapFrameDecode* frame, const string& filename)
+HRESULT save_bitmapframe(IWICBitmapFrameDecode* frame, const std::string& filename)
 {
     UINT width;
     UINT height;
@@ -304,13 +304,13 @@ HRESULT save_bitmapframe(IWICBitmapFrameDecode* frame, const string& filename)
         return hr;
 
     WICRect full_rect = { 0, 0, static_cast<INT>(width), static_cast<INT>(height) };
-    vector<BYTE> rgba_bytes;
+    std::vector<BYTE> rgba_bytes;
     rgba_bytes.resize(width * height * 4);
     hr = frame->CopyPixels(&full_rect, width * 4, static_cast<UINT>(rgba_bytes.size()), rgba_bytes.data());
     if(FAILED(hr))
         return hr;
 
-    vector<BYTE> rgb_bytes;
+    std::vector<BYTE> rgb_bytes;
 
     UINT stride = width * 3;
     if(stride % 4 != 0)
@@ -351,7 +351,7 @@ HRESULT save_bitmapframe(IWICBitmapFrameDecode* frame, const string& filename)
     return S_OK;
 }
 
-int test_file(const string& filename, TestContext& test_context, IClassFactory* class_factory_decoder, IClassFactory* class_factory_props)
+int test_file(const std::string& filename, TestContext& test_context, IClassFactory* class_factory_decoder, IClassFactory* class_factory_props)
 {
     HRESULT hr = S_OK;
 
@@ -383,7 +383,7 @@ int test_file(const string& filename, TestContext& test_context, IClassFactory* 
 
         {
             WICRect line_rect = { 0, 0, static_cast<INT>(w), 1 };
-            vector<BYTE> line;
+            std::vector<BYTE> line;
             line.resize(w * 4);
             hr = frame->CopyPixels(&line_rect, w * 4, static_cast<UINT>(line.size()), line.data());
             HR_ASSERT(hr)
@@ -391,7 +391,7 @@ int test_file(const string& filename, TestContext& test_context, IClassFactory* 
 
         {
             WICRect full_rect = { 0, 0, static_cast<INT>(w), static_cast<INT>(h) };
-            vector<BYTE> full;
+            std::vector<BYTE> full;
             full.resize(w * h * 4);
             hr = frame->CopyPixels(&full_rect, w * 4, static_cast<UINT>(full.size()), full.data());
             HR_ASSERT(hr)
@@ -399,7 +399,7 @@ int test_file(const string& filename, TestContext& test_context, IClassFactory* 
 
         // save the decoded image as bitmap so we can verify the plugin works without actually installing it
 
-        string decoded_filename = filename;
+        std::string decoded_filename = filename;
         decoded_filename.replace(decoded_filename.rfind(".flif"), 5, " (decoded).bmp");
         decoded_filename = getBaseNameFromPath(decoded_filename);
 
@@ -482,13 +482,13 @@ int main(int argc, char** args)
     */
 
     bool parse_options = true;
-    string regression_file_in;
+    std::string regression_file_in;
 
-    vector<string> flif_files;
+    std::vector<std::string> flif_files;
 
     for (int i = 1; i < argc; ++i)
     {
-        string arg = args[i];
+        std::string arg = args[i];
 
         if(parse_options)
         {
@@ -582,7 +582,7 @@ int main(int argc, char** args)
         for(size_t i = 0; i < regression_data.getTokens().size(); ++i)
         {
             MY_ASSERT(regression_data.getTokens()[i] != test_context.getTokens()[i], \
-                string("regression error: line ") + to_string(i+2) + ": " + \
+                std::string("regression error: line ") + std::to_string(i+2) + ": " + \
                 TestContext::string_from_wstring_utf8(regression_data.getTokens()[i].key + L"=" + regression_data.getTokens()[i].value) + " <-> " + \
                 TestContext::string_from_wstring_utf8(test_context.getTokens()[i].key + L"=" + test_context.getTokens()[i].value));
         }

@@ -19,7 +19,6 @@ limitations under the License.
 #include <Windows.h>
 #include <string>
 #include <mutex>
-using namespace std;
 
 /*!
 * All interface functions must contain this exception wrapper (start)
@@ -32,7 +31,7 @@ using namespace std;
 */
 
 #define CUSTOM_CATCH_RETURN_HRESULT } \
-    catch(const bad_alloc&) {\
+    catch(const std::bad_alloc&) {\
         return E_OUTOFMEMORY; \
     } \
     catch(...) {\
@@ -212,6 +211,6 @@ private:
 
 void DllAddRef();
 void DllRelease();
-wstring getThisLibraryPath();
+std::wstring getThisLibraryPath();
 HINSTANCE getInstanceHandle();
-wstring to_wstring(const GUID& guid);
+std::wstring to_wstring(const GUID& guid);

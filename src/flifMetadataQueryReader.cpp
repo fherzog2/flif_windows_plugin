@@ -23,7 +23,7 @@ limitations under the License.
 * APP1 header byte layout:
 * 0xFF 0xE1 size1 size2 [DATA_ID_BYTES] [DATA_BYTES]
 */
-bool pushAPP1Header(const unsigned char* prefix, const size_t prefix_size, const unsigned char* chunk, const size_t chunk_size, vector<unsigned char>& output_buffer)
+bool pushAPP1Header(const unsigned char* prefix, const size_t prefix_size, const unsigned char* chunk, const size_t chunk_size, std::vector<unsigned char>& output_buffer)
 {
     const bool prefix_must_be_added = prefix != nullptr &&
         prefix_size != 0 &&
