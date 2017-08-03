@@ -17,6 +17,7 @@ limitations under the License.
 #pragma once
 
 #include <Shobjidl.h>
+#include <chrono>
 
 #include "util.h"
 #include "RegistryManager.h"
@@ -76,6 +77,14 @@ public:
     // IInitializeWithStream methods
     virtual HRESULT STDMETHODCALLTYPE Initialize(IStream *pstream, DWORD grfMode) override;
 
+    enum PlayState
+    {
+        PS_PLAY,
+        PS_PAUSE,
+        PS_STOP
+    };
+
+    void setPlayState(PlayState state);
     void togglePlayState();
     void showNextFrame();
     void showFrameFromScrollBar(size_t frame);
@@ -85,6 +94,7 @@ public:
 private:
     void destroyPreviewWindowData();
     void updateLayout();
+    void setCurrentFrame(size_t current_frame, bool update_scrollbar);
 
     ComRefCountImpl _ref_count;
 
@@ -99,11 +109,17 @@ private:
     HWND _image_window;    // owned by _preview_window
     HWND _play_button;     // owned by _preview_window
     HWND _frame_scrollbar; // owned by _preview_window
-    bool _playing;
 
     int _frame_width;
     int _frame_height;
+    int32_t _num_loops;
     vector<DibSection> _frame_bitmaps;
+    vector<std::chrono::milliseconds> _frame_delays;
+    std::chrono::milliseconds _loop_time;
+
+    PlayState _play_state;
+    std::chrono::time_point<std::chrono::high_resolution_clock> _play_start_time;
+    std::chrono::milliseconds _elapsed_millis_until_pause; //<! remember the progress in case pause is called
     size_t _current_frame;
     // PREVIEW WINDOW DATA END
 

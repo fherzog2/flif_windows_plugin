@@ -138,10 +138,13 @@ flifPreviewHandler::flifPreviewHandler()
     , _image_window(0)
     , _play_button(0)
     , _frame_scrollbar(0)
-    , _playing(false)
     , _frame_width(0)
     , _frame_height(0)
-    , _current_frame(0)
+    , _num_loops(0)
+    , _loop_time(0)
+    , _play_state(PS_STOP)
+    , _elapsed_millis_until_pause(0)
+    , _current_frame(-1)
 {
     DllAddRef();
 }
@@ -169,11 +172,16 @@ void flifPreviewHandler::destroyPreviewWindowData()
         _registered_class = 0;
     }
 
-    _playing = false;
     _frame_width = 0;
     _frame_height = 0;
+    _num_loops = 0;
     _frame_bitmaps.clear();
-    _current_frame = 0;
+    _frame_delays.clear();
+    _loop_time = std::chrono::milliseconds(0);
+
+    _play_state = PS_STOP;
+    _play_start_time = std::chrono::time_point<std::chrono::high_resolution_clock>();
+    _current_frame = -1;
 }
 
 STDMETHODIMP flifPreviewHandler::QueryInterface(REFIID iid, void** ppvObject)
@@ -321,7 +329,12 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
         if (!flif_decoder_decode_memory(decoder, bytes.data(), bytes.size()))
             return E_FAIL;
 
-        for (size_t i = 0; i < flif_decoder_num_images(decoder); ++i)
+        _num_loops = flif_decoder_num_loops(decoder);
+
+        if (flif_decoder_num_images(decoder) == 0)
+            return E_FAIL;
+
+        for (size_t i = 0, end = flif_decoder_num_images(decoder); i < end; ++i)
         {
             FLIF_IMAGE* image = flif_decoder_get_image(decoder, i);
             if (!image)
@@ -329,9 +342,16 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
 
             _frame_width = flif_image_get_width(image);
             _frame_height = flif_image_get_height(image);
+            _frame_delays.push_back(std::chrono::milliseconds(flif_image_get_frame_delay(image)));
 
             HBITMAP bitmap = createDibSectionFromFlifImage(image);
             _frame_bitmaps.push_back(bitmap);
+        }
+
+        _loop_time = std::chrono::milliseconds(0);
+        for (auto delay : _frame_delays)
+        {
+            _loop_time += std::chrono::milliseconds(delay);
         }
 
         WNDCLASSEXW wcex;
@@ -443,8 +463,9 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
 
         updateLayout();
 
+
         if (!_frame_bitmaps.empty())
-            SendMessage(_image_window, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(_frame_bitmaps[0]._dib_section));
+            setCurrentFrame(0, true);
 
         ShowWindow(_preview_window, SW_SHOW);
 
@@ -516,44 +537,113 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::Initialize(IStream *pstream, DWORD
     CUSTOM_CATCH_RETURN_HRESULT
 }
 
-void flifPreviewHandler::togglePlayState()
+void flifPreviewHandler::setPlayState(PlayState state)
 {
-    _playing = !_playing;
-    if (_playing)
+    if (_play_state == state)
+        return;
+
+    switch (state)
     {
-        // TODO: use something better than timers (smooth animation)
-        SetTimer(_preview_window, 1, 50, nullptr);
+    case PS_PLAY:
+        _play_start_time = std::chrono::high_resolution_clock::now() - _elapsed_millis_until_pause;
+        _elapsed_millis_until_pause = std::chrono::milliseconds(0);
+        {
+            // run the timer as fast as necessary, but keep in mind that it probably can't go faster than 50ms intervals
+
+            std::chrono::milliseconds min_delay = _frame_delays.front();
+            for (auto delay : _frame_delays)
+                if (delay < min_delay)
+                    min_delay = delay;
+
+            UINT interval = max(25, min_delay.count() / 2);
+
+            SetTimer(_preview_window, 1, interval, nullptr);
+        }
         SetWindowTextW(_play_button, L"Pause");
-    }
-    else
-    {
+        break;
+    case PS_PAUSE:
         KillTimer(_preview_window, 1);
         SetWindowTextW(_play_button, L"Play");
+        _elapsed_millis_until_pause = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - _play_start_time);
+        _play_start_time = std::chrono::time_point<std::chrono::high_resolution_clock>();
+        break;
+    case PS_STOP:
+        KillTimer(_preview_window, 1);
+        SetWindowTextW(_play_button, L"Play");
+        _play_start_time = std::chrono::time_point<std::chrono::high_resolution_clock>();
+        _elapsed_millis_until_pause = std::chrono::milliseconds(0);
+        break;
     }
+
+    _play_state = state;
+}
+
+void flifPreviewHandler::togglePlayState()
+{
+    setPlayState(_play_state != PS_PLAY ? PS_PLAY : PS_PAUSE);
+}
+
+void flifPreviewHandler::setCurrentFrame(size_t current_frame, bool update_scrollbar)
+{
+    if (_current_frame == current_frame)
+        return;
+
+    _current_frame = current_frame;
+
+    SendMessage(_image_window, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(_frame_bitmaps[_current_frame]._dib_section));
+
+    if(update_scrollbar)
+        SetScrollPos(_frame_scrollbar, SB_CTL, _current_frame, TRUE /*redraw*/);
 }
 
 void flifPreviewHandler::showNextFrame()
 {
-    // TODO: calculate elapsed time and choose the right image
+    if (_play_state != PS_PLAY)
+        return;
 
     if (!_frame_bitmaps.empty())
     {
-        _current_frame = (_current_frame + 1) % _frame_bitmaps.size();
-        SendMessage(_image_window, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(_frame_bitmaps[_current_frame]._dib_section));
-        SetScrollPos(_frame_scrollbar, SB_CTL, _current_frame, TRUE /*redraw*/);
+        auto now = std::chrono::high_resolution_clock::now();
+        auto elapsed_millis = std::chrono::duration_cast<std::chrono::milliseconds>(now - _play_start_time);
+
+        auto loops_done = elapsed_millis / _loop_time;
+
+        if (_num_loops != 0 && loops_done >= _num_loops)
+        {
+            setPlayState(PS_STOP);
+            setCurrentFrame(_frame_bitmaps.size() - 1, true);
+        }
+        else
+        {
+            elapsed_millis -= loops_done * _loop_time;
+
+            std::chrono::milliseconds total_delay_of_previous_frame(0);
+            for (auto it = _frame_delays.begin(), end = _frame_delays.end(); it != end; ++it)
+            {
+                if (elapsed_millis < *it + total_delay_of_previous_frame)
+                {
+                    setCurrentFrame(std::distance(_frame_delays.begin(), it), true);
+                    break;
+                }
+
+                total_delay_of_previous_frame += *it;
+            }
+        }
     }
 }
 
 void flifPreviewHandler::showFrameFromScrollBar(size_t frame)
 {
-    _playing = false;
-    KillTimer(_preview_window, 1);
-    SetWindowTextW(_play_button, L"Play");
-
     if (frame < _frame_bitmaps.size())
     {
-        _current_frame = frame;
-        SendMessage(_image_window, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(_frame_bitmaps[_current_frame]._dib_section));
+        setPlayState(PS_PAUSE);
+        setCurrentFrame(frame, false);
+
+        _elapsed_millis_until_pause = std::chrono::milliseconds(0);
+        for (auto it = _frame_delays.begin(), end = it + _current_frame; it != end; ++it)
+        {
+            _elapsed_millis_until_pause += std::chrono::milliseconds(*it);
+        }
     }
 }
 
