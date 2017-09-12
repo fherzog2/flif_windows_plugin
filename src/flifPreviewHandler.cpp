@@ -294,9 +294,26 @@ HBITMAP createDibSectionFromFlifImage(FLIF_IMAGE* image)
 
                     for (uint32_t x = 0; x < w; ++x)
                     {
-                        line_start[x * 3 + 2] = line[x*4];
-                        line_start[x * 3 + 1] = line[x * 4 + 1];
-                        line_start[x * 3] = line[x * 4 + 2];
+                        uint8_t red   = line[x * 4];
+                        uint8_t green = line[x * 4 + 1];
+                        uint8_t blue  = line[x * 4 + 2];
+                        uint8_t alpha = line[x * 4 + 3];
+
+                        uint8_t bg_red   = 255;
+                        uint8_t bg_green = 255;
+                        uint8_t bg_blue  = 255;
+
+                        // Currently the widget which displays the image doesn't support alpha.
+                        // So blend the image with a background color.
+                        // Otherwise the color values at translucent pixels will be random.
+
+                        uint16_t red_blended   = red   * alpha + bg_red   * (255 - alpha);
+                        uint16_t green_blended = green * alpha + bg_green * (255 - alpha);
+                        uint16_t blue_blended  = blue  * alpha + bg_blue  * (255 - alpha);
+
+                        line_start[x * 3 + 2] = red_blended / 256;
+                        line_start[x * 3 + 1] = green_blended / 256;
+                        line_start[x * 3]     = blue_blended / 256;
                     }
                 }
             }
