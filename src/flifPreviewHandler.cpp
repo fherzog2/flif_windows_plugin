@@ -17,6 +17,8 @@ limitations under the License.
 #include "flifPreviewHandler.h"
 #include "flifBitmapDecoder.h" // streamReadAll()
 #include "plugin_guids.h"
+#include <algorithm>
+#include <limits>
 
 const WCHAR PREVIEW_WINDOW_CLASSNAME[] = L"flifPreviewHandler";
 
@@ -454,12 +456,12 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
         wcex.cbClsExtra = 0;
         wcex.cbWndExtra = 0;
         wcex.hInstance = getInstanceHandle();
-        wcex.hIcon = LoadIcon(getInstanceHandle(), MAKEINTRESOURCE(IDI_APPLICATION));
+        wcex.hIcon = LoadIcon(getInstanceHandle(), IDI_APPLICATION);
         wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-        wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+        wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
         wcex.lpszMenuName = NULL;
         wcex.lpszClassName = PREVIEW_WINDOW_CLASSNAME;
-        wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_APPLICATION));
+        wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 
         _registered_class = RegisterClassExW(&wcex);
         if (!_registered_class)
@@ -659,7 +661,11 @@ void flifPreviewHandler::setPlayState(PlayState state)
                 if (delay < min_delay)
                     min_delay = delay;
 
-            UINT interval = max(25, min_delay.count() / 2);
+            // run the timer at half of the minimum frame delay (so no frame are missed)
+            // clamp at UINT boundary (probably never happens, just to stay safe)
+            UINT interval = static_cast<UINT>(std::min(min_delay.count() / 2,
+                                                       static_cast<std::chrono::milliseconds::rep>(std::numeric_limits<UINT>::max())));
+            interval = std::max(25u, interval);
 
             SetTimer(_preview_window, 1, interval, nullptr);
         }

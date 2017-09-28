@@ -36,7 +36,7 @@ inline std::string formatHRESULT(HRESULT hr)
 }
 
 #define CHECK_HR(hr) \
-    if(FAILED((hr))) { MessageBox(0, (std::string(__FILE__) + "(" + std::to_string(__LINE__) + "): " + formatHRESULT((hr))).data(), 0, 0); return 1; }
+    if(FAILED((hr))) { MessageBox(0, (std::string(__FILE__) + "(" + std::to_string(__LINE__) + "): " + formatHRESULT((hr))).data(), 0, 0); return 0; }
 
 const WCHAR FLIF_PREVIEW_HANDLER_APP_CLASSNAME[] = L"flifPreviewHandler.app";
 
@@ -110,12 +110,12 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     wcex.cbClsExtra = 0;
     wcex.cbWndExtra = 0;
     wcex.hInstance = hInstance;
-    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_APPLICATION));
+    wcex.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
     wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
     wcex.lpszMenuName = NULL;
     wcex.lpszClassName = FLIF_PREVIEW_HANDLER_APP_CLASSNAME;
-    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_APPLICATION));
+    wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 
     if (!RegisterClassExW(&wcex))
     {
@@ -197,5 +197,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
     LocalFree(args);
 
-    return msg.wParam;
+    // return value irrelevant, PostQuitMessage is always called with 0
+    return 0;
 }

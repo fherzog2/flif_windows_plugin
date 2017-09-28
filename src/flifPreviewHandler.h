@@ -16,6 +16,7 @@ limitations under the License.
 
 #pragma once
 
+#define NOMINMAX
 #include <Shobjidl.h>
 #include <chrono>
 
