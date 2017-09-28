@@ -24,6 +24,11 @@ limitations under the License.
 #include "util.h"
 #include "plugin_guids.h"
 
+// enable visual styles for controls
+// this links to ComCtrl32.dll (version 6), which is present since Windows XP
+#pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#pragma comment(lib, "comctl32.lib")
+
 inline std::string formatHRESULT(HRESULT hr)
 {
     _com_error e(hr);

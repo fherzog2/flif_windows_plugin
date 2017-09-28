@@ -20,39 +20,8 @@ limitations under the License.
 #include <chrono>
 
 #include "util.h"
+#include "window_util.h"
 #include "RegistryManager.h"
-
-class DibSection
-{
-public:
-    DibSection(HBITMAP dib_section = 0)
-        : _dib_section(dib_section)
-    {
-    }
-
-    ~DibSection()
-    {
-        if (_dib_section)
-            DeleteObject(_dib_section);
-    }
-
-    DibSection(const DibSection& other) = delete;
-    DibSection& operator=(const DibSection& other) = delete;
-
-    DibSection(DibSection&& other)
-        : _dib_section(other._dib_section)
-    {
-        other._dib_section = 0;
-    }
-
-    DibSection& operator=(DibSection&& other)
-    {
-        _dib_section = other._dib_section;
-        other._dib_section = 0;
-    }
-
-    HBITMAP _dib_section;
-};
 
 class flifPreviewHandler : public IPreviewHandler, public IInitializeWithStream
 {
@@ -105,7 +74,7 @@ private:
 
     // PREVIEW WINDOW DATA: only valid between DoPreview() and Unload()
     ATOM _registered_class;
-    HWND _preview_window;
+    win::Window _preview_window;
     HWND _image_window;    // owned by _preview_window
     HWND _play_button;     // owned by _preview_window
     HWND _frame_scrollbar; // owned by _preview_window
@@ -113,9 +82,12 @@ private:
     int _frame_width;
     int _frame_height;
     int32_t _num_loops;
-    std::vector<DibSection> _frame_bitmaps;
+    std::vector<win::Bitmap> _frame_bitmaps;
     std::vector<std::chrono::milliseconds> _frame_delays;
     std::chrono::milliseconds _loop_time;
+
+    win::Icon _play_icon;
+    win::Icon _pause_icon;
 
     PlayState _play_state;
     std::chrono::time_point<std::chrono::high_resolution_clock> _play_start_time;

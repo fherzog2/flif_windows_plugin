@@ -24,7 +24,7 @@ const WCHAR PREVIEW_WINDOW_CLASSNAME[] = L"flifPreviewHandler";
 * Boilerplate code for reacting to WM_HSCROLL/WM_VSCROLL events.
 * @return Updated scrollbar position
 */
-int updateScrollBar(HWND hwnd, UINT message, WPARAM wp, LPARAM lp)
+static int updateScrollBar(HWND hwnd, UINT message, WPARAM wp, LPARAM lp)
 {
     int scrollCode = LOWORD(wp);
     int scrollPos = HIWORD(wp);
@@ -94,7 +94,7 @@ int updateScrollBar(HWND hwnd, UINT message, WPARAM wp, LPARAM lp)
     return si.nPos;
 }
 
-LRESULT CALLBACK WND_PROC_FLIF_PREVIEW_HANDLER(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK WND_PROC_FLIF_PREVIEW_HANDLER(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
@@ -159,7 +159,6 @@ void flifPreviewHandler::destroyPreviewWindowData()
 {
     if (_preview_window)
     {
-        DestroyWindow(_preview_window);
         _preview_window = 0;
         _image_window = 0;
         _play_button = 0;
@@ -253,7 +252,7 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::SetRect(const RECT* prc)
     CUSTOM_CATCH_RETURN_HRESULT
 }
 
-HBITMAP createDibSectionFromFlifImage(FLIF_IMAGE* image)
+static HBITMAP createDibSectionFromFlifImage(FLIF_IMAGE* image)
 {
     uint32_t w = flif_image_get_width(image);
     uint32_t h = flif_image_get_height(image);
@@ -323,6 +322,82 @@ HBITMAP createDibSectionFromFlifImage(FLIF_IMAGE* image)
     }
 
     return 0;
+}
+
+/**
+* Creates an icon programmatically.
+*
+* @param drawfunc Function object which takes a HDC as parameter.
+*/
+template<class DRAWFUNC>
+HICON createIcon(int w, int h, DRAWFUNC drawfunc)
+{
+    win::ClientDC dc(NULL);
+    if (dc)
+    {
+        win::Bitmap color = CreateCompatibleBitmap(dc, w, h);
+        win::Bitmap mask = CreateBitmap(w, h, 1, 1, nullptr);
+
+        if (color && mask)
+        {
+            win::MemoryDC mem_dc(dc);
+            if (mem_dc)
+            {
+                win::Pen black_pen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
+                win::Brush black_brush = CreateSolidBrush(RGB(0, 0, 0));
+                win::Brush white_brush = CreateSolidBrush(RGB(255, 255, 255));
+
+                if (black_pen && black_brush && white_brush)
+                {
+                    {
+                        win::SaveAndRestoreDC mem_dc_restore(mem_dc);
+
+                        SelectObject(mem_dc, color);
+
+                        RECT r = { 0, 0, w, h };
+                        FillRect(mem_dc, &r, black_brush);
+
+                        SelectObject(mem_dc, mask);
+
+                        FillRect(mem_dc, &r, white_brush);
+
+                        SelectObject(mem_dc, black_pen);
+                        SelectObject(mem_dc, black_brush);
+
+                        drawfunc(mem_dc);
+                    }
+
+                    ICONINFO ii;
+                    ii.fIcon = TRUE;
+                    ii.hbmMask = mask;
+                    ii.hbmColor = color;
+                    return CreateIconIndirect(&ii);
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
+
+static HICON createPlayIcon(int w, int h)
+{
+    return createIcon(w, h, [=](HDC dc) {
+        POINT points[] = {
+            0, 0,
+            0, h,
+            w, h / 2,
+        };
+        Polygon(dc, points, 3);
+    });
+}
+
+static HICON createPauseIcon(int w, int h)
+{
+    return createIcon(w, h, [=](HDC dc) {
+        Rectangle(dc, w / 8, 0, w / 8 + w / 4, h);
+        Rectangle(dc, w / 8 + w / 2, 0, w / 8 + w / 2 + w / 4, h);
+    });
 }
 
 HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
@@ -438,8 +513,8 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
         if (_frame_bitmaps.size() > 1)
         {
             _play_button = CreateWindowW(L"BUTTON",
-                L"Play",
-                WS_CHILD | WS_VISIBLE,
+                L"",
+                WS_CHILD | WS_VISIBLE | BS_ICON,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
@@ -456,8 +531,20 @@ HRESULT STDMETHODCALLTYPE flifPreviewHandler::DoPreview()
                 return HRESULT_FROM_WIN32(last_error);
             }
 
+            _play_icon = createPlayIcon(16, 16);
+            _pause_icon = createPauseIcon(16, 16);
+
+            if (!(_play_icon && _pause_icon))
+            {
+                DWORD last_error = GetLastError();
+                MessageBox(0, ("Failed to create icons: " + std::to_string(last_error)).data(), 0, 0);
+                return HRESULT_FROM_WIN32(last_error);
+            }
+
+            SendMessage(_play_button, BM_SETIMAGE, IMAGE_ICON, reinterpret_cast<LPARAM>(_play_icon.get()));
+
             _frame_scrollbar = CreateWindowW(L"SCROLLBAR",
-                L"Play",
+                L"",
                 WS_CHILD | WS_VISIBLE | SBS_HORZ,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
@@ -576,17 +663,17 @@ void flifPreviewHandler::setPlayState(PlayState state)
 
             SetTimer(_preview_window, 1, interval, nullptr);
         }
-        SetWindowTextW(_play_button, L"Pause");
+        SendMessage(_play_button, BM_SETIMAGE, IMAGE_ICON, reinterpret_cast<LPARAM>(_pause_icon.get()));
         break;
     case PS_PAUSE:
         KillTimer(_preview_window, 1);
-        SetWindowTextW(_play_button, L"Play");
+        SendMessage(_play_button, BM_SETIMAGE, IMAGE_ICON, reinterpret_cast<LPARAM>(_play_icon.get()));
         _elapsed_millis_until_pause = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - _play_start_time);
         _play_start_time = std::chrono::time_point<std::chrono::high_resolution_clock>();
         break;
     case PS_STOP:
         KillTimer(_preview_window, 1);
-        SetWindowTextW(_play_button, L"Play");
+        SendMessage(_play_button, BM_SETIMAGE, IMAGE_ICON, reinterpret_cast<LPARAM>(_play_icon.get()));
         _play_start_time = std::chrono::time_point<std::chrono::high_resolution_clock>();
         _elapsed_millis_until_pause = std::chrono::milliseconds(0);
         break;
@@ -607,7 +694,7 @@ void flifPreviewHandler::setCurrentFrame(size_t current_frame, bool update_scrol
 
     _current_frame = current_frame;
 
-    SendMessage(_image_window, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(_frame_bitmaps[_current_frame]._dib_section));
+    SendMessage(_image_window, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(_frame_bitmaps[_current_frame].get()));
 
     if(update_scrollbar)
         SetScrollPos(_frame_scrollbar, SB_CTL, _current_frame, TRUE /*redraw*/);
@@ -709,17 +796,19 @@ void flifPreviewHandler::updateLayout()
 
     if (_play_button)
     {
+        const int button_width = 50;
+
         SetWindowPos(_play_button, NULL,
             image_x,
             control_y,
-            100,
+            button_width,
             control_height,
             SWP_NOZORDER | SWP_NOACTIVATE);
 
         SetWindowPos(_frame_scrollbar, NULL,
-            image_x + 100 + spacing,
+            image_x + button_width + spacing,
             control_y,
-            image_width - 100 - spacing,
+            image_width - button_width - spacing,
             control_height,
             SWP_NOZORDER | SWP_NOACTIVATE);
     }
