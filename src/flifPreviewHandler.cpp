@@ -845,7 +845,7 @@ void flifPreviewHandler::registerClass(RegistryManager& reg)
     }
 
     {
-        auto k = reg.key(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\PreviewHandlers");
+        auto k = reg.key(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows\\CurrentVersion\\PreviewHandlers");
         reg.writeString(k, to_wstring(CLSID_flifPreviewHandler), L"flifPreviewHandler");
     }
 }

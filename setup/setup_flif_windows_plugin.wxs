@@ -145,6 +145,33 @@ limitations under the License.
                      Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\KindMap">
           <RegistryValue Type="string" Name=".flif" Value="Picture"/>
         </RegistryKey>
+
+        <!--
+        Registering the preview handler
+        -->
+        <RegistryKey Root="HKCR"
+                     Key="CLSID\{AAF07142-52E9-4CC6-BD48-BA4D09EF437F}">
+          <RegistryValue Type="string" Value="FLIF Preview Handler"/>
+          <RegistryValue Type="string" Name="AppID" Value="{AAF07142-52E9-4CC6-BD48-BA4D09EF437F}"/>
+          <RegistryKey Key="InprocServer32">
+            <RegistryValue Type="string" Value="[dir.FLIFROOT64]flif_windows_plugin.dll"/>
+            <RegistryValue Type="string" Name="ThreadingModel" Value="Apartment"/>
+          </RegistryKey>
+        </RegistryKey>
+
+        <RegistryKey Root="HKCR"
+                     Key="AppID\{AAF07142-52E9-4CC6-BD48-BA4D09EF437F}">
+          <RegistryValue Type="expandable" Name="DllSurrogate" Value="%SystemRoot%\system32\prevhost.exe"/>
+        </RegistryKey>
+
+        <RegistryKey Root="HKCR"
+                     Key=".flif\shellex\{8895b1c6-b41f-4c1c-a562-0d564250836f}">
+          <RegistryValue Type="string" Value="{AAF07142-52E9-4CC6-BD48-BA4D09EF437F}"/>
+        </RegistryKey>
+
+        <RegistryKey Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\PreviewHandlers">
+          <RegistryValue Type="string" Name="{AAF07142-52E9-4CC6-BD48-BA4D09EF437F}" Value="flifPreviewHandler"/>
+        </RegistryKey>
       </Component>
     </DirectoryRef>
 
