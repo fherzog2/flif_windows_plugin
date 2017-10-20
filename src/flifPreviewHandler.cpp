@@ -108,7 +108,7 @@ static LRESULT CALLBACK WND_PROC_FLIF_PREVIEW_HANDLER(HWND hWnd, UINT message, W
         }
         break;
     case WM_TIMER:
-        if(wParam = 1)
+        if(wParam == 1)
         {
             flifPreviewHandler* handler = reinterpret_cast<flifPreviewHandler*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
             handler->showNextFrame();
@@ -386,9 +386,9 @@ static HICON createPlayIcon(int w, int h)
 {
     return createIcon(w, h, [=](HDC dc) {
         POINT points[] = {
-            0, 0,
-            0, h,
-            w, h / 2,
+            { 0, 0 },
+            { 0, h },
+            { w, h / 2 }
         };
         Polygon(dc, points, 3);
     });
@@ -762,7 +762,6 @@ void flifPreviewHandler::updateLayout()
     const int total_w = _parent_window_rect.right - _parent_window_rect.left;
     const int total_h = _parent_window_rect.bottom - _parent_window_rect.top;
 
-    const double total_aspect = double(total_w) / double(total_h);
     const double image_aspect = double(_frame_width) / double(_frame_height);
 
     const int control_height = 25;

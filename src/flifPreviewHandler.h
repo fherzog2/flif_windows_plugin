@@ -28,7 +28,7 @@ class flifPreviewHandler : public IPreviewHandler, public IInitializeWithStream
 {
 public:
     flifPreviewHandler();
-    ~flifPreviewHandler();
+    virtual ~flifPreviewHandler();
 
     // IUnknown methods
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** ppvObject) override;

@@ -21,6 +21,20 @@ limitations under the License.
 
 namespace win
 {
+#define STATIC_ASSERT_NO_COPY(CLASSNAME) \
+    static_assert(std::is_default_constructible<CLASSNAME>::value, #CLASSNAME ": default constructor required"); \
+    static_assert(!std::is_copy_constructible<CLASSNAME>::value, #CLASSNAME ": no copy construction allowed"); \
+    static_assert(!std::is_copy_assignable<CLASSNAME>::value, #CLASSNAME ": no copy construction allowed"); \
+    static_assert(std::is_move_constructible<CLASSNAME>::value, #CLASSNAME ": move construction required"); \
+    static_assert(std::is_move_assignable<CLASSNAME>::value, #CLASSNAME ": move construction required");
+
+#define STATIC_ASSERT_NO_COPY_NO_MOVE(CLASSNAME) \
+    static_assert(!std::is_default_constructible<CLASSNAME>::value, #CLASSNAME ": no default constructor allowed"); \
+    static_assert(!std::is_copy_constructible<CLASSNAME>::value, #CLASSNAME ": no copy construction allowed"); \
+    static_assert(!std::is_copy_assignable<CLASSNAME>::value, #CLASSNAME ": no copy construction allowed"); \
+    static_assert(!std::is_move_constructible<CLASSNAME>::value, #CLASSNAME ": no move construction allowed"); \
+    static_assert(!std::is_move_assignable<CLASSNAME>::value, #CLASSNAME ": no move construction allowed");
+
     class Window
     {
     public:
@@ -66,11 +80,7 @@ namespace win
         HWND _hwnd = 0;
     };
 
-    static_assert(std::is_default_constructible<Window>{}, "default constructor required");
-    static_assert(!std::is_copy_constructible<Window>{}, "no copy construction allowed");
-    static_assert(!std::is_copy_assignable<Window>{}, "no copy construction allowed");
-    static_assert(std::is_move_constructible<Window>{}, "move construction required");
-    static_assert(std::is_move_assignable<Window>{}, "move construction required");
+    STATIC_ASSERT_NO_COPY(Window)
 
     class ClientDC
     {
@@ -99,11 +109,7 @@ namespace win
         HDC _dc = 0;
     };
 
-    static_assert(!std::is_default_constructible<ClientDC>{}, "no default constructor allowed");
-    static_assert(!std::is_copy_constructible<ClientDC>{}, "no copy construction allowed");
-    static_assert(!std::is_copy_assignable<ClientDC>{}, "no copy construction allowed");
-    static_assert(!std::is_move_constructible<ClientDC>{}, "no move construction allowed");
-    static_assert(!std::is_move_assignable<ClientDC>{}, "no move construction allowed");
+    STATIC_ASSERT_NO_COPY_NO_MOVE(ClientDC)
 
     class MemoryDC
     {
@@ -129,11 +135,7 @@ namespace win
         HDC _dc;
     };
 
-    static_assert(!std::is_default_constructible<MemoryDC>{}, "no default constructor allowed");
-    static_assert(!std::is_copy_constructible<MemoryDC>{}, "no copy construction allowed");
-    static_assert(!std::is_copy_assignable<MemoryDC>{}, "no copy construction allowed");
-    static_assert(!std::is_move_constructible<MemoryDC>{}, "no move construction allowed");
-    static_assert(!std::is_move_assignable<MemoryDC>{}, "no move construction allowed");
+    STATIC_ASSERT_NO_COPY_NO_MOVE(MemoryDC)
 
     class SaveAndRestoreDC
     {
@@ -156,11 +158,7 @@ namespace win
         int _save;
     };
 
-    static_assert(!std::is_default_constructible<SaveAndRestoreDC>{}, "no default constructor allowed");
-    static_assert(!std::is_copy_constructible<SaveAndRestoreDC>{}, "no copy construction allowed");
-    static_assert(!std::is_copy_assignable<SaveAndRestoreDC>{}, "no copy construction allowed");
-    static_assert(!std::is_move_constructible<SaveAndRestoreDC>{}, "no move construction allowed");
-    static_assert(!std::is_move_assignable<SaveAndRestoreDC>{}, "no move construction allowed");
+    STATIC_ASSERT_NO_COPY_NO_MOVE(SaveAndRestoreDC)
 
     class ScopedSelectObject
     {
@@ -183,11 +181,7 @@ namespace win
         HGDIOBJ _prev_object = 0;
     };
 
-    static_assert(!std::is_default_constructible<ScopedSelectObject>{}, "no default constructor allowed");
-    static_assert(!std::is_copy_constructible<ScopedSelectObject>{}, "no copy construction allowed");
-    static_assert(!std::is_copy_assignable<ScopedSelectObject>{}, "no copy construction allowed");
-    static_assert(!std::is_move_constructible<ScopedSelectObject>{}, "no move construction allowed");
-    static_assert(!std::is_move_assignable<ScopedSelectObject>{}, "no move construction allowed");
+    STATIC_ASSERT_NO_COPY_NO_MOVE(ScopedSelectObject)
 
     template<class HANDLE_T>
     class GdiObj
@@ -239,23 +233,9 @@ namespace win
     typedef GdiObj<HBRUSH> Brush;
     typedef GdiObj<HPEN> Pen;
 
-    static_assert(std::is_default_constructible<Bitmap>{}, "default constructor required");
-    static_assert(!std::is_copy_constructible<Bitmap>{}, "no copy construction allowed");
-    static_assert(!std::is_copy_assignable<Bitmap>{}, "no copy construction allowed");
-    static_assert(std::is_move_constructible<Bitmap>{}, "move construction required");
-    static_assert(std::is_move_assignable<Bitmap>{}, "move construction required");
-
-    static_assert(std::is_default_constructible<Brush>{}, "default constructor required");
-    static_assert(!std::is_copy_constructible<Brush>{}, "no copy construction allowed");
-    static_assert(!std::is_copy_assignable<Brush>{}, "no copy construction allowed");
-    static_assert(std::is_move_constructible<Brush>{}, "move construction required");
-    static_assert(std::is_move_assignable<Brush>{}, "move construction required");
-
-    static_assert(std::is_default_constructible<Pen>{}, "default constructor required");
-    static_assert(!std::is_copy_constructible<Pen>{}, "no copy construction allowed");
-    static_assert(!std::is_copy_assignable<Pen>{}, "no copy construction allowed");
-    static_assert(std::is_move_constructible<Pen>{}, "move construction required");
-    static_assert(std::is_move_assignable<Pen>{}, "move construction required");
+    STATIC_ASSERT_NO_COPY(Bitmap)
+    STATIC_ASSERT_NO_COPY(Brush)
+    STATIC_ASSERT_NO_COPY(Pen)
 
     class Icon
     {
@@ -301,9 +281,5 @@ namespace win
         HICON _icon = 0;
     };
 
-    static_assert(std::is_default_constructible<Icon>{}, "default constructor required");
-    static_assert(!std::is_copy_constructible<Icon>{}, "no copy construction allowed");
-    static_assert(!std::is_copy_assignable<Icon>{}, "no copy construction allowed");
-    static_assert(std::is_move_constructible<Icon>{}, "move construction required");
-    static_assert(std::is_move_assignable<Icon>{}, "move construction required");
+    STATIC_ASSERT_NO_COPY(Icon)
 }
